@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+model Member {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  nickname     String   @unique
+  password     String
+  registerDate DateTime @default(now())
+  activated    Boolean
+}
+
+model MemberTemp {
+  id             Int    @id @default(autoincrement())
+  memberId       Int
+  token          String
+  activationCode String
+}
+
+model MemberTempReset {
+  id             Int    @id @default(autoincrement())
+  memberId       Int
+  token          String
+  activationCode String
+}
+
+model Community {
+  id          Int    @id @default(autoincrement())
+  title       String
+  description String
+  thumbnail   String
+}
+
+model Post {
+  id               Int      @id @default(autoincrement())
+  title            String
+  creationTime     DateTime @default(now())
+  modificationTIme DateTime @updatedAt
+  viewCount        Int
+  ratePlus         Int
+  rateMinus        Int
+  content          String
+  creator          Int // memberId
+  commentCount     Int
+  nickname         String // anonymous
+  password         String // anonymous
+  communityId      Int
+}
+
+model PostRatePlus {
+  id       Int @id @default(autoincrement())
+  memberId Int
+  postId   Int
+}
+
+model PostRateMinus {
+  id       Int @id @default(autoincrement())
+  memberId Int
+  postId   Int
+}
+
+model Comment {
+  id               Int      @id @default(autoincrement())
+  content          String
+  creationTime     DateTime @default(now())
+  modificationTime DateTime @updatedAt
+  creator          Int // memberId
+  nickname         String // anonymous
+  password         String // anonymous
+  communityId      Int
+  postId           Int
+}
