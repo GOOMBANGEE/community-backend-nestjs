@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import * as Sentry from '@sentry/nestjs';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { AppModule } from './app.module';
+import { ValidException } from './common/exception/valid.exception';
 
 declare const module: any; // hot reload | webpack 설정
 
@@ -38,6 +39,14 @@ async function bootstrap() {
       forbidNonWhitelisted: true, // DTO에 정의되지 않은 속성은 거부
       transform: true, // 요청된 데이터를 DTO로 변환
       skipMissingProperties: false, // 필수 항목이 없으면 거부
+      stopAtFirstError: true,
+      exceptionFactory: (errors) => {
+        const result = errors.map((error) => ({
+          property: error.property,
+          message: error.constraints[Object.keys(error.constraints)[0]],
+        }));
+        return new ValidException(result);
+      },
     }),
   );
 
