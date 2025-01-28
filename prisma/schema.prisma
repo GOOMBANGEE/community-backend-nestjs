@@ -7,72 +7,73 @@ datasource db {
   url      = env("DB_URL")
 }
 
-model Member {
+model User {
   id           Int      @id @default(autoincrement())
   email        String   @unique
-  nickname     String   @unique
+  username     String   @unique
   password     String
-  registerDate DateTime @default(now())
-  activated    Boolean
+  registerDate DateTime @default(now()) @map("register_date")
+  activated    Boolean  @default(false)
+  token        String?
 }
 
-model MemberTemp {
+model UserTemp {
   id             Int    @id @default(autoincrement())
-  memberId       Int
+  userId         Int    @unique @map("user_id")
   token          String
-  activationCode String
+  activationCode Int    @map("activation_code")
 }
 
-model MemberTempReset {
+model userTempReset {
   id             Int    @id @default(autoincrement())
-  memberId       Int
+  userId         Int    @unique @map("user_id")
   token          String
-  activationCode String
+  activationCode Int    @map("activation_code")
 }
 
 model Community {
-  id          Int    @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   title       String
-  description String
-  thumbnail   String
+  description String?
+  thumbnail   String?
 }
 
 model Post {
   id               Int      @id @default(autoincrement())
   title            String
-  creationTime     DateTime @default(now())
-  modificationTIme DateTime @updatedAt
-  viewCount        Int
-  ratePlus         Int
-  rateMinus        Int
+  creationTime     DateTime @default(now()) @map("creation_time")
+  modificationTime DateTime @updatedAt @map("modification_time")
+  viewCount        Int      @default(0) @map("view_count")
+  ratePlus         Int      @default(0) @map("rate_plus")
+  rateMinus        Int      @default(0) @map("rate_minus")
   content          String
-  creator          Int // memberId
-  commentCount     Int
-  nickname         String // anonymous
-  password         String // anonymous
-  communityId      Int
+  creator          Int? // userId
+  commentCount     Int      @default(0) @map("comment_count")
+  username         String // anonymous
+  password         String? // anonymous
+  communityId      Int      @map("community_id")
 }
 
 model PostRatePlus {
-  id       Int @id @default(autoincrement())
-  memberId Int
-  postId   Int
+  id     Int @id @default(autoincrement())
+  userId Int @map("user_id")
+  postId Int @map("post_id")
 }
 
 model PostRateMinus {
-  id       Int @id @default(autoincrement())
-  memberId Int
-  postId   Int
+  id     Int @id @default(autoincrement())
+  userId Int @map("user_id")
+  postId Int @map("post_id")
 }
 
 model Comment {
   id               Int      @id @default(autoincrement())
   content          String
-  creationTime     DateTime @default(now())
-  modificationTime DateTime @updatedAt
-  creator          Int // memberId
-  nickname         String // anonymous
-  password         String // anonymous
-  communityId      Int
-  postId           Int
+  creationTime     DateTime @default(now()) @map("creation_time")
+  modificationTime DateTime @updatedAt @map("modification_time")
+  creator          Int? // userId
+  username         String // anonymous
+  password         String? // anonymous
+  communityId      Int      @map("community_id")
+  postId           Int      @map("post_id")
 }
