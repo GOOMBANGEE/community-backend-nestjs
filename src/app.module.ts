@@ -10,8 +10,10 @@ import * as process from 'node:process';
 import * as winston from 'winston';
 import { CommonModule } from './common/common.module';
 import { envKey } from './common/const/env.const';
+import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
 import { GlobalExceptionFilter } from './common/filter/global-exception.filter';
-import { MemberModule } from './member/member.module';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -92,6 +94,7 @@ import { MemberModule } from './member/member.module';
   ],
   controllers: [],
   providers: [
+    AppService,
     {
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
