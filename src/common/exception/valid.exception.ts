@@ -9,7 +9,6 @@ export const VALIDATION_ERROR = {
   EMAIL_ERROR: '이메일 유효성 검사를 통과하지 못했습니다',
   USERNAME_ERROR: '유저명 유효성 검사를 통과하지 못했습니다',
   PASSWORD_ERROR: '비밀번호 유효성 검사를 통과하지 못했습니다',
-  TOKEN_INVALID: '토큰이 유효하지 않습니다',
   ACTIVATION_CODE_INVALID: '코드가 유효하지 않습니다',
 };
 

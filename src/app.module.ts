@@ -26,10 +26,13 @@ import { AppService } from './app.service';
         FRONTEND_URL: Joi.string().required(),
         SENTRY_DSN: Joi.string().required(),
 
-        JWT_ACCESS_TOKEN: Joi.string().required(),
+        REGISTER_CODE_LENGTH: Joi.number().required(),
+        SALT_OR_ROUNDS: Joi.number().required(),
+
+        JWT_ACCESS_TOKEN_KEY: Joi.string().required(),
         JWT_ACCESS_TOKEN_EXPIRES: Joi.number().required(),
         JWT_ACCESS_TOKEN_SECRET: Joi.string().required(),
-        JWT_REFRESH_TOKEN: Joi.string().required(),
+        JWT_REFRESH_TOKEN_KEY: Joi.string().required(),
         JWT_REFRESH_TOKEN_EXPIRES: Joi.number().required(),
         JWT_REFRESH_TOKEN_SECRET: Joi.string().required(),
 
@@ -91,6 +94,8 @@ import { AppService } from './app.service';
     }),
     CommonModule,
     MemberModule,
+    AuthModule,
+    UserModule,
   ],
   controllers: [],
   providers: [
