@@ -15,6 +15,7 @@ model User {
   registerDate DateTime @default(now()) @map("register_date")
   activated    Boolean  @default(false)
   token        String?
+  role         String?
 }
 
 model UserTemp {

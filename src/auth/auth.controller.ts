@@ -58,7 +58,7 @@ export class AuthController {
   @UseGuards(LocalGuard) // auth/guard/local.guard.ts => LocalGuard extends AuthGuard('local')
   @HttpCode(HttpStatus.OK)
   login(
-    @RequestUser() requestUser,
+    @RequestUser() requestUser: RequestUser,
     @Res({ passthrough: true }) response: Response,
   ) {
     return this.authService.login(requestUser, response);
@@ -69,7 +69,7 @@ export class AuthController {
   @Get('refresh')
   @UseGuards(RefreshGuard)
   @HttpCode(HttpStatus.OK)
-  refresh(@RequestUser() requestUser) {
+  refresh(@RequestUser() requestUser: RequestUser) {
     return this.authService.refreshToken(requestUser);
   }
 

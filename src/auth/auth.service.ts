@@ -13,6 +13,7 @@ import { User } from '@prisma/client';
 import { v1 as uuidV1 } from 'uuid';
 import { MailService } from '../mail/mail.service';
 import { EmailActivateDto } from './dto/email-activate.dto';
+import { RequestUser } from './decorator/user.decorator';
 
 @Injectable()
 export class AuthService {
@@ -236,19 +237,20 @@ export class AuthService {
   }
 
   // /auth/login
-  async login(user: User, response: Response) {
+  async login(user: RequestUser, response: Response) {
     const userId = user.id;
     const username = user.username;
+    const role = user.role;
 
     const accessTokenExpires = this.accessTokenExpires;
     // expiresIn => 1s단위 => 3600 => 1h
     const accessToken = await this.jwtService.signAsync(
-      { id: userId, username, type: this.accessTokenKey },
+      { id: userId, username, type: this.accessTokenKey, role },
       { secret: this.accessTokenSecret, expiresIn: accessTokenExpires },
     );
 
     const refreshToken = await this.jwtService.signAsync(
-      { id: userId, username, type: this.refreshTokenKey },
+      { id: userId, username, type: this.refreshTokenKey, role },
       { secret: this.refreshTokenSecret, expiresIn: this.refreshTokenExpires },
     );
 
@@ -265,7 +267,7 @@ export class AuthService {
   }
 
   // /auth/refresh
-  async refreshToken(requestUser) {
+  async refreshToken(requestUser: RequestUser) {
     if (requestUser.type !== this.refreshTokenKey) {
       throw new UserException(USER_ERROR.REFRESH_TOKEN_INVALID);
     }
@@ -277,6 +279,7 @@ export class AuthService {
         id: requestUser.id,
         username: requestUser.username,
         type: this.accessTokenKey,
+        role: requestUser.role,
       },
       { secret: this.accessTokenSecret, expiresIn: accessTokenExpires },
     );
