@@ -10,6 +10,7 @@ export const USER_ERROR = {
   REFRESH_TOKEN_INVALID: '토큰이 유효하지 않습니다',
   EMAIL_OR_PASSWORD_ERROR: '이메일 혹은 비밀번호가 틀렸습니다',
   ACTIVATE_REQUIRED: '이메일 인증이 필요합니다',
+  PERMISSION_DENIED: '권한이 없습니다',
 };
 
 export class UserException extends HttpException {

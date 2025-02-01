@@ -10,6 +10,9 @@ export const VALIDATION_ERROR = {
   USERNAME_ERROR: '유저명 유효성 검사를 통과하지 못했습니다',
   PASSWORD_ERROR: '비밀번호 유효성 검사를 통과하지 못했습니다',
   ACTIVATION_CODE_INVALID: '코드가 유효하지 않습니다',
+  ID_ERROR: '올바르지 않은 ID입니다',
+  TITLE_ERROR: '제목이 비어있습니다',
+  CONTENT_ERROR: '내용이 비어있습니다',
 };
 
 export class ValidException extends HttpException {
