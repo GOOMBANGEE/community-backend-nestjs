@@ -93,14 +93,10 @@ export class PostService {
         this.logger.debug('post update: ' + POST_ERROR.PERMISSION_DENIED);
         throw new PostException(POST_ERROR.PERMISSION_DENIED);
       }
-      const post = await this.prisma.post.update({
+      await this.prisma.post.update({
         where: { id, creator: requestUser.id },
         data: updatePostDto,
       });
-      if (!post) {
-        this.logger.debug('post update: ' + POST_ERROR.PERMISSION_DENIED);
-        throw new PostException(POST_ERROR.PERMISSION_DENIED);
-      }
     }
 
     // creator 없는경우 비회원 게시글 -> 비밀번호 검사 로직 실행
@@ -130,6 +126,11 @@ export class PostService {
     removePostDto: RemovePostDto,
   ) {
     const post = await this.prisma.post.findUnique({ where: { id } });
+
+    if (!post) {
+      this.logger.debug('post remove: ' + POST_ERROR.POST_INVALID);
+      throw new PostException(POST_ERROR.POST_INVALID);
+    }
 
     if (post.creator) {
       if (!requestUser) {
