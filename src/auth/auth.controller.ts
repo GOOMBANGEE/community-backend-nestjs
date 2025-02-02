@@ -12,7 +12,7 @@ import {
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshGuard } from './guard/refresh.guard';
-import { RequestUser } from './decorator/user.decorator';
+import { RequestUser, RequestUserLocal } from './decorator/user.decorator';
 import { Request, Response } from 'express';
 import { AccessGuard } from './guard/access.guard';
 import { AuthGuard } from '@nestjs/passport';
@@ -58,9 +58,10 @@ export class AuthController {
   @UseGuards(LocalGuard) // auth/guard/local.guard.ts => LocalGuard extends AuthGuard('local')
   @HttpCode(HttpStatus.OK)
   login(
-    @RequestUser() requestUser: RequestUser,
+    @RequestUser() requestUser: RequestUserLocal,
     @Res({ passthrough: true }) response: Response,
   ) {
+    console.log(requestUser);
     return this.authService.login(requestUser, response);
   }
 
@@ -70,6 +71,7 @@ export class AuthController {
   @UseGuards(RefreshGuard)
   @HttpCode(HttpStatus.OK)
   refresh(@RequestUser() requestUser: RequestUser) {
+    console.log(requestUser);
     return this.authService.refreshToken(requestUser);
   }
 

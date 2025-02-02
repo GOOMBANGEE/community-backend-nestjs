@@ -15,6 +15,7 @@ import { AuthModule } from './auth/auth.module';
 import { GlobalExceptionFilter } from './common/filter/global-exception.filter';
 import { AppService } from './app.service';
 import { CommunityModule } from './community/community.module';
+import { PostModule } from './post/post.module';
 
 @Module({
   imports: [
@@ -97,6 +98,7 @@ import { CommunityModule } from './community/community.module';
     AuthModule,
     UserModule,
     CommunityModule,
+    PostModule,
   ],
   controllers: [],
   providers: [

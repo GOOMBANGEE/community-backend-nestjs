@@ -13,7 +13,7 @@ import { User } from '@prisma/client';
 import { v1 as uuidV1 } from 'uuid';
 import { MailService } from '../mail/mail.service';
 import { EmailActivateDto } from './dto/email-activate.dto';
-import { RequestUser } from './decorator/user.decorator';
+import { RequestUser, RequestUserLocal } from './decorator/user.decorator';
 
 @Injectable()
 export class AuthService {
@@ -82,7 +82,7 @@ export class AuthService {
   // user.token 비어있는지 확인
   async checkUserToken(existingUser: User) {
     // 1-1 토큰값 비어있다 -> 인증완료되어 이미 가입완료된 상태 -> 중복이메일 에러
-    if (existingUser.token) {
+    if (!existingUser.token) {
       this.logger.debug('checkUserToken: ' + USER_ERROR.MAIL_EXIST);
       throw new UserException(USER_ERROR.MAIL_EXIST);
     }
@@ -237,7 +237,7 @@ export class AuthService {
   }
 
   // /auth/login
-  async login(user: RequestUser, response: Response) {
+  async login(user: RequestUserLocal, response: Response) {
     const userId = user.id;
     const username = user.username;
     const role = user.role;
