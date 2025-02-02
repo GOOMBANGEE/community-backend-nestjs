@@ -16,6 +16,7 @@ import { GlobalExceptionFilter } from './common/filter/global-exception.filter';
 import { AppService } from './app.service';
 import { CommunityModule } from './community/community.module';
 import { PostModule } from './post/post.module';
+import { CommentModule } from './comment/comment.module';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { PostModule } from './post/post.module';
     UserModule,
     CommunityModule,
     PostModule,
+    CommentModule,
   ],
   controllers: [],
   providers: [
