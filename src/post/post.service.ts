@@ -9,6 +9,8 @@ import { envKey } from '../common/const/env.const';
 import { ConfigService } from '@nestjs/config';
 import { POST_ERROR, PostException } from '../common/exception/post.exception';
 import { RemovePostDto } from './dto/remove-post.dto';
+import { CheckPasswordDto } from './dto/check-password.dto';
+import { RateDto } from './dto/rate.dto';
 
 @Injectable()
 export class PostService {
@@ -80,6 +82,26 @@ export class PostService {
     });
   }
 
+  // /post/:id/check
+  // 비회원 게시글만 진입
+  async checkPassword(id: number, checkPasswordDto: CheckPasswordDto) {
+    const post = await this.prisma.post.findUnique({ where: { id } });
+    if (!post) {
+      this.logger.debug('post checkPassword: ' + POST_ERROR.POST_INVALID);
+      throw new PostException(POST_ERROR.POST_INVALID);
+    }
+
+    if (post.creator) {
+      this.logger.debug('post checkPassword: ' + POST_ERROR.PERMISSION_DENIED);
+      throw new PostException(POST_ERROR.PERMISSION_DENIED);
+    }
+
+    if (!(await bcrypt.compare(checkPasswordDto.password, post.password))) {
+      this.logger.debug('post checkPassword: ' + POST_ERROR.PASSWORD_INVALID);
+      throw new PostException(POST_ERROR.PASSWORD_INVALID);
+    }
+  }
+
   // /post
   // return: {id: postId}
   async update(
@@ -117,6 +139,60 @@ export class PostService {
     }
 
     return id;
+  }
+
+  // /post/:id/rate
+  // 회원만 접근가능
+  async rate(id: number, requestUser: RequestUser, rateDto: RateDto) {
+    if (!requestUser) {
+      throw new PostException(POST_ERROR.PERMISSION_DENIED);
+    }
+
+    if (!(await this.prisma.post.findUnique({ where: { id } }))) {
+      throw new PostException(POST_ERROR.POST_INVALID);
+    }
+
+    if (rateDto.rate === true) {
+      try {
+        await this.prisma.$transaction([
+          this.prisma.post.update({
+            where: { id },
+            data: { ratePlus: { increment: 1 } },
+          }),
+          this.prisma.postRatePlus.create({
+            data: {
+              postId: id,
+              userId: requestUser.id,
+            },
+          }),
+        ]);
+      } catch (error) {
+        // unique 조건
+        if (error.code === 'P2002') {
+          throw new PostException(POST_ERROR.RATE_PLUS_ALREADY);
+        }
+      }
+    } else {
+      try {
+        await this.prisma.$transaction([
+          this.prisma.post.update({
+            where: { id },
+            data: { rateMinus: { increment: 1 } },
+          }),
+          this.prisma.postRateMinus.create({
+            data: {
+              postId: id,
+              userId: requestUser.id,
+            },
+          }),
+        ]);
+      } catch (error) {
+        if (error.code === 'P2002') {
+          // unique 조건
+          throw new PostException(POST_ERROR.RATE_MINUS_ALREADY);
+        }
+      }
+    }
   }
 
   // /post

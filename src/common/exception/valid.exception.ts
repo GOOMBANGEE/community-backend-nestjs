@@ -13,6 +13,7 @@ export const VALIDATION_ERROR = {
   ID_ERROR: '올바르지 않은 ID입니다',
   TITLE_ERROR: '제목이 비어있습니다',
   CONTENT_ERROR: '내용이 비어있습니다',
+  VALUE_INVALID: '허용되지 않는 값입니다',
 };
 
 export class ValidException extends HttpException {

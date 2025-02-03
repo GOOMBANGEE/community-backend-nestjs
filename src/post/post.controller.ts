@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
@@ -15,6 +17,8 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { RequestUser } from '../auth/decorator/user.decorator';
 import { RemovePostDto } from './dto/remove-post.dto';
 import { AccessGuard } from '../auth/guard/access.guard';
+import { CheckPasswordDto } from './dto/check-password.dto';
+import { RateDto } from './dto/rate.dto';
 
 @UseGuards(AccessGuard)
 @Controller('post')
@@ -39,6 +43,17 @@ export class PostController {
     return this.postService.findOne(id);
   }
 
+  // /post/:id/check
+  // 비회원 게시글만 진입
+  @HttpCode(HttpStatus.OK)
+  @Post(':id/check')
+  checkPassword(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() checkPasswordDto: CheckPasswordDto,
+  ) {
+    return this.postService.checkPassword(id, checkPasswordDto);
+  }
+
   // /post
   // return: {id: postId}
   @Patch(':id')
@@ -48,6 +63,18 @@ export class PostController {
     @Body() updatePostDto: UpdatePostDto,
   ) {
     return this.postService.update(id, requestUser, updatePostDto);
+  }
+
+  // /post/:id/rate
+  // 회원만 접근가능
+  @HttpCode(HttpStatus.OK)
+  @Post(':id/rate')
+  rate(
+    @Param('id', ParseIntPipe) id: number,
+    @RequestUser() requestUser: RequestUser,
+    @Body() rateDto: RateDto,
+  ) {
+    return this.postService.rate(id, requestUser, rateDto);
   }
 
   // /post

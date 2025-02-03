@@ -57,14 +57,18 @@ model Post {
 
 model PostRatePlus {
   id     Int @id @default(autoincrement())
-  userId Int @map("user_id")
   postId Int @map("post_id")
+  userId Int @map("user_id")
+
+  @@unique([postId, userId])
 }
 
 model PostRateMinus {
   id     Int @id @default(autoincrement())
-  userId Int @map("user_id")
   postId Int @map("post_id")
+  userId Int @map("user_id")
+
+  @@unique([postId, userId])
 }
 
 model Comment {
