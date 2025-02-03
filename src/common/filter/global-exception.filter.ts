@@ -4,13 +4,16 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Inject,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import * as Sentry from '@sentry/node';
 import { SentryExceptionCaptured } from '@sentry/nestjs';
+import { Logger } from 'winston';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  constructor(@Inject('winston') private readonly logger: Logger) {}
   @SentryExceptionCaptured()
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -19,6 +22,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     const statusCode = getStatusCode(exception);
     const message = getErrorMessage(exception);
+    this.logger.debug(exception);
 
     // Sentry에 예외 전송
     Sentry.captureException(exception);

@@ -1,10 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { RequestUser } from '../auth/decorator/user.decorator';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma.service';
-import { Logger } from 'winston';
 import {
   COMMENT_ERROR,
   CommentException,
@@ -20,7 +19,6 @@ export class CommentService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-    @Inject('winston') private readonly logger: Logger,
   ) {
     this.saltOrRounds = Number(this.configService.get(envKey.saltOrRounds));
   }
@@ -31,7 +29,6 @@ export class CommentService {
     let hashedPassword: string;
     if (!requestUser) {
       if (!createCommentDto.password) {
-        this.logger.debug('comment create: ' + COMMENT_ERROR.PASSWORD_INVALID);
         throw new CommentException(COMMENT_ERROR.PASSWORD_INVALID);
       }
       hashedPassword = await bcrypt.hash(
@@ -44,7 +41,6 @@ export class CommentService {
       where: { id: createCommentDto.postId },
     });
     if (!post) {
-      this.logger.debug('comment create: ' + COMMENT_ERROR.POST_INVALID);
       throw new CommentException(COMMENT_ERROR.POST_INVALID);
     }
 
@@ -102,7 +98,6 @@ export class CommentService {
   ) {
     if (updateCommentDto.creator) {
       if (!requestUser) {
-        this.logger.debug('comment update: ' + COMMENT_ERROR.PERMISSION_DENIED);
         throw new CommentException(COMMENT_ERROR.PERMISSION_DENIED);
       }
       await this.prisma.comment.update({
@@ -122,7 +117,6 @@ export class CommentService {
           data: { content: updateCommentDto.content },
         });
       } else {
-        this.logger.debug('comment update: ' + COMMENT_ERROR.PERMISSION_DENIED);
         throw new CommentException(COMMENT_ERROR.PERMISSION_DENIED);
       }
     }
@@ -139,13 +133,11 @@ export class CommentService {
     const comment = await this.prisma.comment.findUnique({ where: { id } });
 
     if (!comment) {
-      this.logger.debug('comment remove: ' + COMMENT_ERROR.COMMENT_INVALID);
       throw new CommentException(COMMENT_ERROR.COMMENT_INVALID);
     }
 
     if (comment.creator) {
       if (!requestUser) {
-        this.logger.debug('comment remove: ' + COMMENT_ERROR.PERMISSION_DENIED);
         throw new CommentException(COMMENT_ERROR.PERMISSION_DENIED);
       }
       await this.prisma.comment.delete({
@@ -162,7 +154,6 @@ export class CommentService {
       await this.prisma.comment.delete({ where: { id } });
       return;
     }
-    this.logger.debug('comment remove: ' + COMMENT_ERROR.PERMISSION_DENIED);
     throw new CommentException(COMMENT_ERROR.PERMISSION_DENIED);
   }
 }

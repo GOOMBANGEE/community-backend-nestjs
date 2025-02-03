@@ -1,10 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { envKey } from 'src/common/const/env.const';
 import { RegisterDto } from './dto/register.dto';
-import { Logger } from 'winston';
 import { Request, Response } from 'express';
 import { CookieOptions } from 'express-serve-static-core';
 import { PrismaService } from '../common/prisma.service';
@@ -31,7 +30,6 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
-    @Inject('winston') private readonly logger: Logger,
   ) {
     this.registerCodeLength = this.configService.get(envKey.registerCodeLength);
     this.saltOrRounds = Number(this.configService.get(envKey.saltOrRounds));
@@ -54,7 +52,6 @@ export class AuthService {
     const confirmPassword = registerDto.confirmPassword;
 
     if (password !== confirmPassword) {
-      this.logger.debug('register: ' + USER_ERROR.PASSWORD_DO_NOT_MATCH);
       throw new UserException(USER_ERROR.PASSWORD_DO_NOT_MATCH);
     }
 
@@ -70,7 +67,6 @@ export class AuthService {
 
     // 2 register -> 이메일 중복검사 통과 -> 닉네임 검사
     if (await this.prisma.user.findUnique({ where: { username } })) {
-      this.logger.debug('register: ' + USER_ERROR.USERNAME_EXIST);
       throw new UserException(USER_ERROR.USERNAME_EXIST);
     }
 
@@ -83,7 +79,6 @@ export class AuthService {
   async checkUserToken(existingUser: User) {
     // 1-1 토큰값 비어있다 -> 인증완료되어 이미 가입완료된 상태 -> 중복이메일 에러
     if (!existingUser.token) {
-      this.logger.debug('checkUserToken: ' + USER_ERROR.MAIL_EXIST);
       throw new UserException(USER_ERROR.MAIL_EXIST);
     }
 
@@ -102,7 +97,6 @@ export class AuthService {
         });
       });
     }
-    this.logger.debug('checkUserToken: ' + USER_ERROR.MAIL_EXIST);
     throw new UserException(USER_ERROR.MAIL_EXIST);
   }
 
@@ -146,7 +140,6 @@ export class AuthService {
   async sendEmail(request: Request) {
     const token = request.headers.cookie.split('token=')[1];
     if (!token) {
-      this.logger.debug('sendEmail: ', USER_ERROR.TOKEN_INVALID);
       throw new UserException(USER_ERROR.TOKEN_INVALID);
     }
 
@@ -154,7 +147,6 @@ export class AuthService {
       where: { token },
     });
     if (!user) {
-      this.logger.debug('sendEmail: ' + USER_ERROR.UNREGISTERED);
       throw new UserException(USER_ERROR.UNREGISTERED);
     }
 
@@ -180,7 +172,6 @@ export class AuthService {
 
     const user = await this.prisma.user.findFirst({ where: { token } });
     if (!user) {
-      this.logger.debug('emailActivate: ' + USER_ERROR.UNREGISTERED);
       throw new UserException(USER_ERROR.UNREGISTERED);
     }
     const userTemp = await this.prisma.userTemp.findFirst({
@@ -190,7 +181,6 @@ export class AuthService {
       },
     });
     if (!userTemp) {
-      this.logger.debug('emailActivate: ' + USER_ERROR.ACTIVATION_CODE_INVALID);
       throw new UserException(USER_ERROR.ACTIVATION_CODE_INVALID);
     }
 
@@ -217,7 +207,6 @@ export class AuthService {
     });
 
     if (!user) {
-      this.logger.debug('validateUser: ' + USER_ERROR.UNREGISTERED);
       throw new UserException(USER_ERROR.UNREGISTERED);
     }
 
@@ -226,13 +215,11 @@ export class AuthService {
       delete result.password;
 
       if (!user.activated) {
-        this.logger.debug('validateUser: ' + USER_ERROR.ACTIVATE_REQUIRED);
         throw new UserException(USER_ERROR.ACTIVATE_REQUIRED);
       }
       return result;
     }
 
-    this.logger.debug('validateUser: ' + USER_ERROR.EMAIL_OR_PASSWORD_ERROR);
     throw new UserException(USER_ERROR.EMAIL_OR_PASSWORD_ERROR);
   }
 

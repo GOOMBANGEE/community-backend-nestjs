@@ -1,7 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateCommunityDto } from './dto/create-community.dto';
 import { UpdateCommunityDto } from './dto/update-community.dto';
-import { Logger } from 'winston';
 import { PrismaService } from '../common/prisma.service';
 import {
   COMMUNITY_ERROR,
@@ -11,18 +10,12 @@ import { RequestUser } from '../auth/decorator/user.decorator';
 
 @Injectable()
 export class CommunityService {
-  constructor(
-    private readonly prisma: PrismaService,
-    @Inject('winston') private readonly logger: Logger,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // /community
   // admin만 접근가능
   create(requestUser: RequestUser, createCommunityDto: CreateCommunityDto) {
     if (!requestUser.role.includes('admin')) {
-      this.logger.debug(
-        'community create: ' + COMMUNITY_ERROR.PERMISSION_DENIED,
-      );
       throw new CommunityException(COMMUNITY_ERROR.PERMISSION_DENIED);
     }
 
@@ -92,9 +85,6 @@ export class CommunityService {
     updateCommunityDto: UpdateCommunityDto,
   ) {
     if (!requestUser.role.includes('admin')) {
-      this.logger.debug(
-        'community update: ' + COMMUNITY_ERROR.PERMISSION_DENIED,
-      );
       throw new CommunityException(COMMUNITY_ERROR.PERMISSION_DENIED);
     }
 
@@ -108,9 +98,6 @@ export class CommunityService {
   // admin만 접근가능
   remove(id: number, requestUser: RequestUser) {
     if (!requestUser.role.includes('admin')) {
-      this.logger.debug(
-        'community remove: ' + COMMUNITY_ERROR.PERMISSION_DENIED,
-      );
       throw new CommunityException(COMMUNITY_ERROR.PERMISSION_DENIED);
     }
     return this.prisma.community.delete({ where: { id } });

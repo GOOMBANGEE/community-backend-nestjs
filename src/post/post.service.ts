@@ -1,8 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PrismaService } from '../common/prisma.service';
-import { Logger } from 'winston';
 import { RequestUser } from '../auth/decorator/user.decorator';
 import * as bcrypt from 'bcrypt';
 import { envKey } from '../common/const/env.const';
@@ -19,7 +18,6 @@ export class PostService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-    @Inject('winston') private readonly logger: Logger,
   ) {
     this.saltOrRounds = Number(this.configService.get(envKey.saltOrRounds));
   }
@@ -30,7 +28,6 @@ export class PostService {
     let hashedPassword: string;
     if (!requestUser) {
       if (!createPostDto.password) {
-        this.logger.debug('post create: ' + POST_ERROR.PASSWORD_INVALID);
         throw new PostException(POST_ERROR.PASSWORD_INVALID);
       }
       hashedPassword = await bcrypt.hash(
@@ -43,7 +40,6 @@ export class PostService {
       where: { id: createPostDto.communityId },
     });
     if (!community) {
-      this.logger.debug('post create: ' + POST_ERROR.COMMUNITY_INVALID);
       throw new PostException(POST_ERROR.COMMUNITY_INVALID);
     }
 
@@ -87,17 +83,14 @@ export class PostService {
   async checkPassword(id: number, checkPasswordDto: CheckPasswordDto) {
     const post = await this.prisma.post.findUnique({ where: { id } });
     if (!post) {
-      this.logger.debug('post checkPassword: ' + POST_ERROR.POST_INVALID);
       throw new PostException(POST_ERROR.POST_INVALID);
     }
 
     if (post.creator) {
-      this.logger.debug('post checkPassword: ' + POST_ERROR.PERMISSION_DENIED);
       throw new PostException(POST_ERROR.PERMISSION_DENIED);
     }
 
     if (!(await bcrypt.compare(checkPasswordDto.password, post.password))) {
-      this.logger.debug('post checkPassword: ' + POST_ERROR.PASSWORD_INVALID);
       throw new PostException(POST_ERROR.PASSWORD_INVALID);
     }
   }
@@ -112,7 +105,6 @@ export class PostService {
     // creator 있는 경우 회원 게시글 -> 회원검사
     if (updatePostDto.creator) {
       if (!requestUser) {
-        this.logger.debug('post update: ' + POST_ERROR.PERMISSION_DENIED);
         throw new PostException(POST_ERROR.PERMISSION_DENIED);
       }
       await this.prisma.post.update({
@@ -133,7 +125,6 @@ export class PostService {
           data: { title: updatePostDto.title, content: updatePostDto.content },
         });
       } else {
-        this.logger.debug('post update: ' + POST_ERROR.PASSWORD_INVALID);
         throw new PostException(POST_ERROR.PASSWORD_INVALID);
       }
     }
@@ -204,13 +195,11 @@ export class PostService {
     const post = await this.prisma.post.findUnique({ where: { id } });
 
     if (!post) {
-      this.logger.debug('post remove: ' + POST_ERROR.POST_INVALID);
       throw new PostException(POST_ERROR.POST_INVALID);
     }
 
     if (post.creator) {
       if (!requestUser) {
-        this.logger.debug('post remove: ' + POST_ERROR.PERMISSION_DENIED);
         throw new PostException(POST_ERROR.PERMISSION_DENIED);
       }
       await this.prisma.post.delete({ where: { id, creator: requestUser.id } });
@@ -228,7 +217,6 @@ export class PostService {
       return;
     }
 
-    this.logger.debug('post remove: ' + POST_ERROR.PERMISSION_DENIED);
     throw new PostException(POST_ERROR.PERMISSION_DENIED);
   }
 }
