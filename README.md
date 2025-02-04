@@ -19,7 +19,7 @@ API for community
 ## Project setup
 
 ```bash
-git clone https://github.com/hv-community/community-backend-nestjs
+git clone https://github.com/GOOMBANGEE/community-backend-nestjs
 
 cd community-backend-nestjs
 cp sample.env .env
