@@ -7,6 +7,7 @@ import {
   CommunityException,
 } from '../common/exception/community.exception';
 import { RequestUser } from '../auth/decorator/user.decorator';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CommunityService {
@@ -25,7 +26,7 @@ export class CommunityService {
     });
   }
 
-  // /community
+  // /community?page=number
   // return: {communityList: Community[], total: community.count, page: currentPage, totalPage}
   async communityList(page: number) {
     const limit = 20;
@@ -45,16 +46,59 @@ export class CommunityService {
     };
   }
 
-  // /community/:id
-  // 게시판 전체 게시글 목록
+  // /community/:id?mode=string&target=string&keyword=string&page=number
+  // mode: best, null, target: title, content
+  // 게시글 목록
   // return: {postList: Post[], total: community.count, page: currentPage, totalPage}
-  async postList(id: number, page: number) {
+  async postList(
+    id: number,
+    mode: string,
+    target: string,
+    keyword: string,
+    page: number,
+  ) {
+    const baseCondition: Prisma.PostWhereInput = { communityId: id };
+
+    const isBestMode = mode === 'best';
+    const modeCondition: Prisma.PostWhereInput = isBestMode
+      ? { ratePlus: { gte: 1 } }
+      : {};
+
+    const searchCondition = [];
+    if (keyword) {
+      const searchField: Record<string, Prisma.PostWhereInput> = {
+        all: {
+          OR: [
+            { title: { contains: keyword } },
+            { content: { contains: keyword } },
+            { username: { contains: keyword } },
+          ],
+        },
+        title: { title: { contains: keyword } },
+        content: { content: { contains: keyword } },
+        username: { username: { contains: keyword } },
+        title_content: {
+          OR: [
+            { title: { contains: keyword } },
+            { content: { contains: keyword } },
+          ],
+        },
+      };
+
+      const option = searchField[target] || {};
+      searchCondition.push(option);
+    }
+
+    const whereCondition: Prisma.PostWhereInput = {
+      AND: [baseCondition, modeCondition, ...searchCondition],
+    };
+
     const limit = 20;
     const [postList, total] = await this.prisma.$transaction([
       this.prisma.post.findMany({
         skip: (page - 1) * limit,
         take: limit,
-        where: { communityId: id },
+        where: whereCondition,
         select: {
           id: true,
           title: true,
@@ -65,8 +109,9 @@ export class CommunityService {
           commentCount: true,
           username: true,
         },
+        orderBy: { id: 'desc' },
       }),
-      this.prisma.post.count({ where: { communityId: id } }),
+      this.prisma.post.count({ where: whereCondition }),
     ]);
 
     return {

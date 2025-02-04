@@ -31,22 +31,26 @@ export class CommunityController {
     return this.communityService.create(requestUser, createCommunityDto);
   }
 
-  // /community
+  // /community?page=number
   // return: {communityList: Community[], total: community.count, page: currentPage, totalPage}
   @Get()
   communityList(@Query('page', ParseIntPipe) page: number = 1) {
     return this.communityService.communityList(page);
   }
 
-  // /community/:id
-  // 게시판 전체 게시글 목록
+  // /community/:id?mode=string&target=string&keyword=string&page=number
+  // mode: best, null, target: title, content
+  // 게시글 목록
   // return: {postList: Post[], total: community.count, page: currentPage, totalPage}
   @Get(':id')
   postList(
     @Param('id', ParseIntPipe) id: number,
+    @Query('mode') mode: string,
+    @Query('target') target: string,
+    @Query('keyword') keyword: string,
     @Query('page', ParseIntPipe) page: number = 1,
   ) {
-    return this.communityService.postList(id, page);
+    return this.communityService.postList(id, mode, target, keyword, page);
   }
 
   // /community
