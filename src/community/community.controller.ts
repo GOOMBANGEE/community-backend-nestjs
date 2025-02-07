@@ -32,7 +32,7 @@ export class CommunityController {
   }
 
   // /community?page=number
-  // return: {communityList: Community[], total: community.count, page: currentPage, totalPage}
+  // return: {communityList: (Community & { postList: Post[] })[], total: community.count, page: currentPage, totalPage}
   @Get()
   communityList(@Query('page', ParseIntPipe) page: number = 1) {
     return this.communityService.communityList(page);

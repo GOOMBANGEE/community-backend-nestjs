@@ -7,7 +7,7 @@ import {
   CommunityException,
 } from '../common/exception/community.exception';
 import { RequestUser } from '../auth/decorator/user.decorator';
-import { Prisma } from '@prisma/client';
+import { Community, Post, Prisma } from '@prisma/client';
 
 @Injectable()
 export class CommunityService {
@@ -27,16 +27,49 @@ export class CommunityService {
   }
 
   // /community?page=number
-  // return: {communityList: Community[], total: community.count, page: currentPage, totalPage}
+  // return: {communityList: (Community & { postList: Post[] })[], total: community.count, page: currentPage, totalPage}
   async communityList(page: number) {
     const limit = 20;
-    const [communityList, total] = await this.prisma.$transaction([
+    const [communities, total] = await this.prisma.$transaction([
       this.prisma.community.findMany({
         skip: (page - 1) * limit,
         take: limit,
+        select: {
+          id: true,
+          title: true,
+        },
       }),
       this.prisma.community.count(),
     ]);
+    const communityIds = communities.map(
+      (community: Community) => community.id,
+    );
+
+    const postList = await this.prisma.post.findMany({
+      take: 10,
+      select: {
+        id: true,
+        title: true,
+        creationTime: true,
+        commentCount: true,
+        communityId: true,
+      },
+      where: { communityId: { in: communityIds } },
+      orderBy: { id: 'desc' },
+    });
+    const postCommunity = postList.reduce(
+      (acc, post: Post) => {
+        if (!acc[post.communityId]) acc[post.communityId] = [];
+        acc[post.communityId].push(post);
+        return acc;
+      },
+      {} as Record<number, Post[]>,
+    );
+
+    const communityList = communities.map((community) => ({
+      ...community,
+      postList: postCommunity[community.id] || [],
+    }));
 
     return {
       communityList,
@@ -49,9 +82,9 @@ export class CommunityService {
   // /community/:id?mode=string&target=string&keyword=string&page=number
   // mode: best, null, target: title, content
   // 게시글 목록
-  // return: {postList: Post[], total: community.count, page: currentPage, totalPage}
+  // return: {community: Community, postList: Post[], total: community.count, page: currentPage, totalPage}
   async postList(
-    id: number,
+    id: number, // communityId
     mode: string,
     target: string,
     keyword: string,
@@ -94,7 +127,12 @@ export class CommunityService {
     };
 
     const limit = 20;
-    const [postList, total] = await this.prisma.$transaction([
+    const [community, postList, total] = await this.prisma.$transaction([
+      // community
+      this.prisma.community.findUnique({
+        where: { id },
+      }),
+      // postList
       this.prisma.post.findMany({
         skip: (page - 1) * limit,
         take: limit,
@@ -108,13 +146,16 @@ export class CommunityService {
           rateMinus: true,
           commentCount: true,
           username: true,
+          communityId: true,
         },
         orderBy: { id: 'desc' },
       }),
+      // total
       this.prisma.post.count({ where: whereCondition }),
     ]);
 
     return {
+      community,
       postList,
       total,
       page,
