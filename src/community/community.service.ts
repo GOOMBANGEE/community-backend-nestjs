@@ -45,18 +45,48 @@ export class CommunityService {
       (community: Community) => community.id,
     );
 
-    const postList = await this.prisma.post.findMany({
-      take: 10,
-      select: {
-        id: true,
-        title: true,
-        creationTime: true,
-        commentCount: true,
-        communityId: true,
-      },
-      where: { communityId: { in: communityIds } },
-      orderBy: { id: 'desc' },
+    // queryRaw 각 커뮤니티별 상위 10개 게시글 조회
+    // {
+    //   id: 9,
+    //   title: 'title',
+    //   creation_time: 2025-02-02T07:02:31.816Z,
+    //   comment_count: 0,
+    //   community_id: 3
+    // }
+    const snakePostList = await this.prisma.$queryRaw<Post[]>`
+    SELECT subquery.id,
+           subquery.title,
+           subquery.creation_time,
+           subquery.comment_count,
+           subquery.community_id 
+    FROM (
+        SELECT *,
+            ROW_NUMBER() OVER (
+            PARTITION BY "community_id" 
+            ORDER BY id DESC
+        ) as row_num
+        FROM "Post"
+        WHERE "community_id" IN (${Prisma.join(communityIds)})
+    ) subquery
+    WHERE row_num <= 10`;
+
+    // snake to camel
+    // {
+    //   id: 9,
+    //   title: 'title',
+    //   creationTime: 2025-02-02T07:02:31.816Z,
+    //   commentCount: 0,
+    //   communityId: 3
+    // }
+    const postList = snakePostList.map((post) => {
+      const camelCasedPost: Record<string, any> = {};
+      Object.keys(post).forEach((key) => {
+        camelCasedPost[key.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] =
+          post[key];
+      });
+      return camelCasedPost;
     });
+
     const postCommunity = postList.reduce(
       (acc, post: Post) => {
         if (!acc[post.communityId]) acc[post.communityId] = [];
