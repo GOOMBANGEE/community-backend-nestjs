@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DB_URL")
+  provider     = "postgresql"
+  url          = env("DB_URL")
+  relationMode = "prisma"
 }
 
 model User {
@@ -16,20 +17,33 @@ model User {
   activated    Boolean  @default(false)
   token        String?
   role         String?
+
+  UserTemp      UserTemp[]
+  userTempReset userTempReset[]
+  Post          Post[]
+  PostRatePlus  PostRatePlus[]
+  PostRateMinus PostRateMinus[]
+  Comment       Comment[]
 }
 
 model UserTemp {
   id             Int    @id @default(autoincrement())
   userId         Int    @unique @map("user_id")
+  user           User   @relation(fields: [userId], references: [id])
   token          String
   activationCode Int    @map("activation_code")
+
+  @@index([userId])
 }
 
 model userTempReset {
   id             Int    @id @default(autoincrement())
   userId         Int    @unique @map("user_id")
+  user           User   @relation(fields: [userId], references: [id])
   token          String
   activationCode Int    @map("activation_code")
+
+  @@index([userId])
 }
 
 model Community {
@@ -37,48 +51,75 @@ model Community {
   title       String
   description String?
   thumbnail   String?
+
+  Post    Post[]
+  Comment Comment[]
 }
 
 model Post {
-  id               Int      @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   title            String
-  creationTime     DateTime @default(now()) @map("creation_time")
-  modificationTime DateTime @updatedAt @map("modification_time")
-  viewCount        Int      @default(0) @map("view_count")
-  ratePlus         Int      @default(0) @map("rate_plus")
-  rateMinus        Int      @default(0) @map("rate_minus")
+  creationTime     DateTime  @default(now()) @map("creation_time")
+  modificationTime DateTime  @default(now()) @map("modification_time")
+  viewCount        Int       @default(0) @map("view_count")
+  ratePlus         Int       @default(0) @map("rate_plus")
+  rateMinus        Int       @default(0) @map("rate_minus")
   content          String
   creator          Int? // userId
-  commentCount     Int      @default(0) @map("comment_count")
+  user             User?     @relation(fields: [creator], references: [id])
+  commentCount     Int       @default(0) @map("comment_count")
   username         String // anonymous
   password         String? // anonymous
-  communityId      Int      @map("community_id")
+  communityId      Int       @map("community_id")
+  community        Community @relation(fields: [communityId], references: [id])
+
+  PostRatePlus  PostRatePlus[]
+  PostRateMinus PostRateMinus[]
+  Comment       Comment[]
+
+  @@index([creator])
+  @@index([communityId])
 }
 
 model PostRatePlus {
-  id     Int @id @default(autoincrement())
-  postId Int @map("post_id")
-  userId Int @map("user_id")
+  id     Int  @id @default(autoincrement())
+  postId Int  @map("post_id")
+  post   Post @relation(fields: [postId], references: [id])
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id])
 
   @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
 }
 
 model PostRateMinus {
-  id     Int @id @default(autoincrement())
-  postId Int @map("post_id")
-  userId Int @map("user_id")
+  id     Int  @id @default(autoincrement())
+  postId Int  @map("post_id")
+  post   Post @relation(fields: [postId], references: [id])
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id])
 
   @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
 }
 
 model Comment {
-  id               Int      @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   content          String
-  creationTime     DateTime @default(now()) @map("creation_time")
-  modificationTime DateTime @updatedAt @map("modification_time")
+  creationTime     DateTime  @default(now()) @map("creation_time")
+  modificationTime DateTime  @default(now()) @map("modification_time")
   creator          Int? // userId
+  user             User?     @relation(fields: [creator], references: [id])
   username         String // anonymous
   password         String? // anonymous
-  communityId      Int      @map("community_id")
-  postId           Int      @map("post_id")
+  communityId      Int       @map("community_id")
+  community        Community @relation(fields: [communityId], references: [id])
+  postId           Int       @map("post_id")
+  post             Post      @relation(fields: [postId], references: [id])
+
+  @@index([creator])
+  @@index([communityId])
+  @@index([postId])
 }
