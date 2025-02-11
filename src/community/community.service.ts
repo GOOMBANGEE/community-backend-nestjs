@@ -33,6 +33,13 @@ export class CommunityService {
           title: true,
           Post: {
             take: limit,
+            select: {
+              id: true,
+              title: true,
+              creationTime: true,
+              commentCount: true,
+              communityId: true,
+            },
             orderBy: {
               id: 'desc',
             },
