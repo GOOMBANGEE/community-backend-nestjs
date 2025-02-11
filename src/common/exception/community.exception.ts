@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 export const COMMUNITY_ERROR = {
+  COMMUNITY_INVALID: '존재하지 않는 게시판입니다',
   PERMISSION_DENIED: '권한이 없습니다',
 };
 

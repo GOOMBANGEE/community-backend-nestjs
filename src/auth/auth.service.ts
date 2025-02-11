@@ -13,6 +13,10 @@ import { v1 as uuidV1 } from 'uuid';
 import { MailService } from '../mail/mail.service';
 import { EmailActivateDto } from './dto/email-activate.dto';
 import { RequestUser, RequestUserLocal } from './decorator/user.decorator';
+import {
+  VALIDATION_ERROR,
+  ValidException,
+} from '../common/exception/valid.exception';
 
 @Injectable()
 export class AuthService {
@@ -277,5 +281,24 @@ export class AuthService {
   // /auth/logout
   async logout(response: Response) {
     response.clearCookie(this.refreshTokenKey);
+  }
+
+  async encryptPassword(password: string) {
+    if (password) {
+      return await bcrypt.hash(password, this.saltOrRounds);
+    }
+    throw new ValidException([
+      { property: password, message: VALIDATION_ERROR.PASSWORD_ERROR },
+    ]);
+  }
+
+  async validateRequestUser(requestUser: RequestUser) {
+    if (requestUser) {
+      return this.prisma.user.findUnique({
+        where: { id: requestUser.id },
+      });
+    }
+
+    throw new UserException(USER_ERROR.UNREGISTERED);
   }
 }

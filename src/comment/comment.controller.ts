@@ -15,21 +15,33 @@ import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { AccessGuard } from '../auth/guard/access.guard';
 import { RequestUser } from '../auth/decorator/user.decorator';
-import { RemoveCommentDto } from './dto/remove-comment.dto';
+import { AuthService } from '../auth/auth.service';
+import { PostService } from '../post/post.service';
+import { CommunityService } from '../community/community.service';
 
 @UseGuards(AccessGuard)
 @Controller('comment')
 export class CommentController {
-  constructor(private readonly commentService: CommentService) {}
+  constructor(
+    private readonly commentService: CommentService,
+    private readonly authService: AuthService,
+    private readonly communityService: CommunityService,
+    private readonly postService: PostService,
+  ) {}
 
   // /comment
   // return: {id:commentId}
   @Post()
-  create(
+  async create(
     @RequestUser() requestUser: RequestUser,
     @Body() createCommentDto: CreateCommentDto,
   ) {
-    return this.commentService.create(requestUser, createCommentDto);
+    const [user, community, post] = await Promise.all([
+      this.authService.validateRequestUser(requestUser),
+      this.communityService.validateCommunity(createCommentDto.communityId),
+      this.postService.validatePost(createCommentDto.postId),
+    ]);
+    return this.commentService.create(user, community, post, createCommentDto);
   }
 
   // /comment/:postId?page=1
@@ -37,29 +49,31 @@ export class CommentController {
   @Get(':postId')
   commentList(
     @Param('postId', ParseIntPipe) postId: number,
-    @Query('page', ParseIntPipe) page: number,
+    @Query('page', ParseIntPipe) page: number = 1,
   ) {
     return this.commentService.commentList(postId, page);
   }
 
-  // /comment
+  // /comment/:id
   // return {id:commentId}
   @Patch(':id')
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @RequestUser() requestUser: RequestUser,
     @Body() updateCommentDto: UpdateCommentDto,
   ) {
-    return this.commentService.update(id, requestUser, updateCommentDto);
+    const user = await this.authService.validateRequestUser(requestUser);
+    return this.commentService.update(id, user, updateCommentDto);
   }
 
-  // /comment
+  // /comment/:id?password=string
   @Delete(':id')
-  remove(
+  async remove(
     @Param('id', ParseIntPipe) id: number,
+    @Query('password') password: string,
     @RequestUser() requestUser: RequestUser,
-    @Body() removeCommentDto: RemoveCommentDto,
   ) {
-    return this.commentService.remove(id, requestUser, removeCommentDto);
+    const user = await this.authService.validateRequestUser(requestUser);
+    return this.commentService.remove(id, password, user);
   }
 }

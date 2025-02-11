@@ -20,6 +20,6 @@ import { MailModule } from '../mail/mail.module';
     AccessStrategy,
     RefreshStrategy,
   ],
-  exports: [LocalStrategy, AccessStrategy, RefreshStrategy],
+  exports: [AuthService, LocalStrategy, AccessStrategy, RefreshStrategy],
 })
 export class AuthModule {}

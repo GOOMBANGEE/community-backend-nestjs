@@ -8,5 +8,6 @@ import { AuthModule } from '../auth/auth.module';
   imports: [CommonModule, AuthModule],
   controllers: [CommunityController],
   providers: [CommunityService],
+  exports: [CommunityService],
 })
 export class CommunityModule {}

@@ -3,6 +3,10 @@ import { CreateCommunityDto } from './dto/create-community.dto';
 import { UpdateCommunityDto } from './dto/update-community.dto';
 import { PrismaService } from '../common/prisma.service';
 import { Prisma } from '@prisma/client';
+import {
+  COMMUNITY_ERROR,
+  CommunityException,
+} from '../common/exception/community.exception';
 
 @Injectable()
 export class CommunityService {
@@ -143,5 +147,14 @@ export class CommunityService {
   // admin만 접근가능
   async remove(id: number) {
     return this.prisma.community.delete({ where: { id } });
+  }
+
+  async validateCommunity(id: number) {
+    if (id) {
+      return this.prisma.community.findUnique({
+        where: { id },
+      });
+    }
+    throw new CommunityException(COMMUNITY_ERROR.COMMUNITY_INVALID);
   }
 }

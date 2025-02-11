@@ -1,61 +1,53 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
-import { RequestUser } from '../auth/decorator/user.decorator';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma.service';
 import {
   COMMENT_ERROR,
   CommentException,
 } from '../common/exception/comment.exception';
-import { RemoveCommentDto } from './dto/remove-comment.dto';
 import * as bcrypt from 'bcrypt';
-import { envKey } from '../common/const/env.const';
+import { Community, Post, User } from '@prisma/client';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class CommentService {
-  private readonly saltOrRounds: number;
-
   constructor(
-    private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-  ) {
-    this.saltOrRounds = Number(this.configService.get(envKey.saltOrRounds));
-  }
+    private readonly authService: AuthService,
+  ) {}
 
   // /comment
   // return: {id:commentId}
-  async create(requestUser: RequestUser, createCommentDto: CreateCommentDto) {
+  async create(
+    user: User,
+    community: Community,
+    post: Post,
+    createCommentDto: CreateCommentDto,
+  ) {
     let hashedPassword: string;
-    if (!requestUser) {
-      if (!createCommentDto.password) {
-        throw new CommentException(COMMENT_ERROR.PASSWORD_INVALID);
-      }
-      hashedPassword = await bcrypt.hash(
+    if (!user) {
+      hashedPassword = await this.authService.encryptPassword(
         createCommentDto.password,
-        this.saltOrRounds,
       );
     }
 
-    const post = await this.prisma.post.findUnique({
-      where: { id: createCommentDto.postId },
-    });
-    if (!post) {
-      throw new CommentException(COMMENT_ERROR.POST_INVALID);
-    }
-
-    const comment = await this.prisma.comment.create({
-      data: {
-        content: createCommentDto.content,
-        creator: requestUser ? requestUser.id : null,
-        username: requestUser
-          ? requestUser.username
-          : createCommentDto.username,
-        password: requestUser ? null : hashedPassword,
-        communityId: createCommentDto.communityId,
-        postId: createCommentDto.postId,
-      },
-    });
+    const [, comment] = await this.prisma.$transaction([
+      this.prisma.post.update({
+        where: { id: createCommentDto.postId },
+        data: { commentCount: { increment: 1 } },
+      }),
+      this.prisma.comment.create({
+        data: {
+          content: createCommentDto.content,
+          creator: user ? user.id : null,
+          username: user ? user.username : createCommentDto.username,
+          password: user ? null : hashedPassword,
+          communityId: community.id,
+          postId: post.id,
+        },
+      }),
+    ]);
 
     return comment.id;
   }
@@ -91,69 +83,55 @@ export class CommentService {
 
   // /comment
   // return {id:commentId}
-  async update(
-    id: number,
-    requestUser: RequestUser,
-    updateCommentDto: UpdateCommentDto,
-  ) {
+  async update(id: number, user: User, updateCommentDto: UpdateCommentDto) {
+    const comment = await this.validateComment(id);
     if (updateCommentDto.creator) {
-      if (!requestUser) {
-        throw new CommentException(COMMENT_ERROR.PERMISSION_DENIED);
-      }
       await this.prisma.comment.update({
-        where: { id, creator: requestUser.id },
-        data: { content: updateCommentDto.content },
+        where: { id, creator: user.id },
+        data: {
+          content: updateCommentDto.content,
+          modificationTime: new Date(),
+        },
       });
+      return id;
     }
 
-    if (!updateCommentDto.creator) {
-      const comment = await this.prisma.comment.findUnique({ where: { id } });
-      if (
-        updateCommentDto.password &&
-        (await bcrypt.compare(updateCommentDto.password, comment.password))
-      ) {
-        await this.prisma.comment.update({
-          where: { id },
-          data: { content: updateCommentDto.content },
-        });
-      } else {
-        throw new CommentException(COMMENT_ERROR.PERMISSION_DENIED);
-      }
+    // updateCommentDto.creator === null
+    if (await bcrypt.compare(updateCommentDto.password, comment.password)) {
+      await this.prisma.comment.update({
+        where: { id },
+        data: {
+          content: updateCommentDto.content,
+          modificationTime: new Date(),
+        },
+      });
+      return id;
     }
 
-    return id;
+    throw new CommentException(COMMENT_ERROR.PERMISSION_DENIED);
   }
 
   // /comment
-  async remove(
-    id: number,
-    requestUser: RequestUser,
-    removeCommentDto: RemoveCommentDto,
-  ) {
-    const comment = await this.prisma.comment.findUnique({ where: { id } });
-
-    if (!comment) {
-      throw new CommentException(COMMENT_ERROR.COMMENT_INVALID);
-    }
+  async remove(id: number, password: string, user: User) {
+    const comment = await this.validateComment(id);
 
     if (comment.creator) {
-      if (!requestUser) {
-        throw new CommentException(COMMENT_ERROR.PERMISSION_DENIED);
-      }
-      await this.prisma.comment.delete({
-        where: { id, creator: requestUser.id },
-      });
+      await this.prisma.comment.delete({ where: { id, creator: user.id } });
       return;
     }
 
-    if (
-      !comment.creator &&
-      removeCommentDto.password &&
-      (await bcrypt.compare(removeCommentDto.password, comment.password))
-    ) {
+    if (await bcrypt.compare(password, comment.password)) {
       await this.prisma.comment.delete({ where: { id } });
       return;
     }
+
     throw new CommentException(COMMENT_ERROR.PERMISSION_DENIED);
+  }
+
+  async validateComment(id: number) {
+    if (id) {
+      return this.prisma.comment.findUnique({ where: { id } });
+    }
+    throw new CommentException(COMMENT_ERROR.COMMENT_INVALID);
   }
 }

@@ -9,30 +9,40 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { RequestUser } from '../auth/decorator/user.decorator';
-import { RemovePostDto } from './dto/remove-post.dto';
 import { AccessGuard } from '../auth/guard/access.guard';
 import { CheckPasswordDto } from './dto/check-password.dto';
 import { RateDto } from './dto/rate.dto';
+import { AuthService } from '../auth/auth.service';
+import { CommunityService } from '../community/community.service';
 
 @UseGuards(AccessGuard)
 @Controller('post')
 export class PostController {
-  constructor(private readonly postService: PostService) {}
+  constructor(
+    private readonly postService: PostService,
+    private readonly authService: AuthService,
+    private readonly communityService: CommunityService,
+  ) {}
 
   // /post
   // return: {id: postId}
   @Post()
-  create(
+  async create(
     @RequestUser() requestUser: RequestUser,
     @Body() createPostDto: CreatePostDto,
   ) {
-    return this.postService.create(requestUser, createPostDto);
+    const [user, community] = await Promise.all([
+      this.authService.validateRequestUser(requestUser),
+      this.communityService.validateCommunity(createPostDto.communityId),
+    ]);
+    return this.postService.create(user, community, createPostDto);
   }
 
   // /post/:id
@@ -54,36 +64,39 @@ export class PostController {
     return this.postService.checkPassword(id, checkPasswordDto);
   }
 
-  // /post
+  // /post/:id
   // return: {id: postId}
   @Patch(':id')
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @RequestUser() requestUser: RequestUser,
     @Body() updatePostDto: UpdatePostDto,
   ) {
-    return this.postService.update(id, requestUser, updatePostDto);
+    const user = await this.authService.validateRequestUser(requestUser);
+    return this.postService.update(id, user, updatePostDto);
   }
 
   // /post/:id/rate
   // 회원만 접근가능
   @HttpCode(HttpStatus.OK)
   @Post(':id/rate')
-  rate(
+  async rate(
     @Param('id', ParseIntPipe) id: number,
     @RequestUser() requestUser: RequestUser,
     @Body() rateDto: RateDto,
   ) {
-    return this.postService.rate(id, requestUser, rateDto);
+    const user = await this.authService.validateRequestUser(requestUser);
+    return this.postService.rate(id, user, rateDto);
   }
 
-  // /post
+  // /post/:id?password=string
   @Delete(':id')
-  remove(
+  async remove(
     @Param('id', ParseIntPipe) id: number,
+    @Query('password') password: string,
     @RequestUser() requestUser: RequestUser,
-    @Body() removePostDto: RemovePostDto,
   ) {
-    return this.postService.remove(id, requestUser, removePostDto);
+    const user = await this.authService.validateRequestUser(requestUser);
+    return this.postService.remove(id, password, user);
   }
 }
