@@ -2,11 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { CreateCommunityDto } from './dto/create-community.dto';
 import { UpdateCommunityDto } from './dto/update-community.dto';
 import { PrismaService } from '../common/prisma.service';
-import {
-  COMMUNITY_ERROR,
-  CommunityException,
-} from '../common/exception/community.exception';
-import { RequestUser } from '../auth/decorator/user.decorator';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -15,11 +10,7 @@ export class CommunityService {
 
   // /community
   // admin만 접근가능
-  create(requestUser: RequestUser, createCommunityDto: CreateCommunityDto) {
-    if (!requestUser.role.includes('admin')) {
-      throw new CommunityException(COMMUNITY_ERROR.PERMISSION_DENIED);
-    }
-
+  async create(createCommunityDto: CreateCommunityDto) {
     const { title } = createCommunityDto;
     return this.prisma.community.create({
       data: { title, description: `${title} 게시판 입니다.` },
@@ -141,15 +132,7 @@ export class CommunityService {
 
   // /community
   // admin만 접근가능
-  update(
-    id: number,
-    requestUser: RequestUser,
-    updateCommunityDto: UpdateCommunityDto,
-  ) {
-    if (!requestUser.role.includes('admin')) {
-      throw new CommunityException(COMMUNITY_ERROR.PERMISSION_DENIED);
-    }
-
+  async update(id: number, updateCommunityDto: UpdateCommunityDto) {
     return this.prisma.community.update({
       where: { id },
       data: { ...updateCommunityDto },
@@ -158,10 +141,7 @@ export class CommunityService {
 
   // /community
   // admin만 접근가능
-  remove(id: number, requestUser: RequestUser) {
-    if (!requestUser.role.includes('admin')) {
-      throw new CommunityException(COMMUNITY_ERROR.PERMISSION_DENIED);
-    }
+  async remove(id: number) {
     return this.prisma.community.delete({ where: { id } });
   }
 }

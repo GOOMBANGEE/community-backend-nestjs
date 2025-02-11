@@ -13,8 +13,8 @@ import {
 import { CommunityService } from './community.service';
 import { CreateCommunityDto } from './dto/create-community.dto';
 import { UpdateCommunityDto } from './dto/update-community.dto';
+import { AdminGuard } from '../auth/guard/admin.guard';
 import { AccessGuard } from '../auth/guard/access.guard';
-import { RequestUser } from '../auth/decorator/user.decorator';
 
 @Controller('community')
 export class CommunityController {
@@ -22,13 +22,10 @@ export class CommunityController {
 
   // /community
   // admin만 접근가능
-  @UseGuards(AccessGuard)
+  @UseGuards(AccessGuard, AdminGuard)
   @Post()
-  create(
-    @RequestUser() requestUser: RequestUser,
-    @Body() createCommunityDto: CreateCommunityDto,
-  ) {
-    return this.communityService.create(requestUser, createCommunityDto);
+  create(@Body() createCommunityDto: CreateCommunityDto) {
+    return this.communityService.create(createCommunityDto);
   }
 
   // /community?page=number
@@ -55,24 +52,20 @@ export class CommunityController {
 
   // /community
   // admin만 접근가능
-  @UseGuards(AccessGuard)
+  @UseGuards(AccessGuard, AdminGuard)
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @RequestUser() requestUser: RequestUser,
     @Body() updateCommunityDto: UpdateCommunityDto,
   ) {
-    return this.communityService.update(id, requestUser, updateCommunityDto);
+    return this.communityService.update(id, updateCommunityDto);
   }
 
   // /community
   // admin만 접근가능
-  @UseGuards(AccessGuard)
+  @UseGuards(AccessGuard, AdminGuard)
   @Delete(':id')
-  remove(
-    @Param('id', ParseIntPipe) id: number,
-    @RequestUser() requestUser: RequestUser,
-  ) {
-    return this.communityService.remove(id, requestUser);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.communityService.remove(id);
   }
 }
