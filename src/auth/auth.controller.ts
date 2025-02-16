@@ -5,7 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  Req,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -13,7 +13,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshGuard } from './guard/refresh.guard';
 import { RequestUser, RequestUserLocal } from './decorator/user.decorator';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { AccessGuard } from './guard/access.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { LocalGuard } from './guard/local.guard';
@@ -26,29 +26,25 @@ export class AuthController {
   // /auth/register
   // return: set-cookie('token')
   @Post('register')
-  register(
-    @Body() registerDto: RegisterDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    return this.authService.register(registerDto, response);
+  register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
   }
 
-  // /auth/email/send
+  // /auth/email/send?token=string
   // 이메일 재전송
   @Get('email/send')
-  sendEmail(@Req() request: Request) {
-    return this.authService.sendEmail(request);
+  sendEmail(@Query('token') token: string) {
+    return this.authService.sendEmail(token);
   }
 
-  // /auth/email/activate
+  // /auth/email/activate?token=string
   // return: clear-cookie('token')
   @Post('email/activate')
   emailActivate(
-    @Req() request: Request,
+    @Query('token') token: string,
     @Body() emailActivateDto: EmailActivateDto,
-    @Res({ passthrough: true }) response: Response,
   ) {
-    return this.authService.emailActivate(request, emailActivateDto, response);
+    return this.authService.emailActivate(token, emailActivateDto);
   }
 
   // /auth/login

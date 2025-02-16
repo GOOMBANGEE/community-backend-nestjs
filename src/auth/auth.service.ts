@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { envKey } from 'src/common/const/env.const';
 import { RegisterDto } from './dto/register.dto';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { CookieOptions } from 'express-serve-static-core';
 import { PrismaService } from '../common/prisma.service';
 import { USER_ERROR, UserException } from '../common/exception/user.exception';
@@ -49,7 +49,7 @@ export class AuthService {
 
   // /auth/register
   // return: set-cookie('token')
-  async register(registerDto: RegisterDto, response: Response) {
+  async register(registerDto: RegisterDto) {
     const email = registerDto.email;
     const username = registerDto.username;
     const password = registerDto.password;
@@ -75,7 +75,7 @@ export class AuthService {
     }
 
     // 3 register -> 중복된유저 없을때 -> saveUserInfo
-    return await this.saveUserInfo(registerDto, response);
+    return await this.saveUserInfo(registerDto);
   }
 
   // 1 register -> 이미 등록된 이메일이 있을떄 -> checkUserToken
@@ -105,7 +105,7 @@ export class AuthService {
   }
 
   // 3 register -> saveUserInfo
-  async saveUserInfo(registerDto: RegisterDto, response: Response) {
+  async saveUserInfo(registerDto: RegisterDto) {
     const token = uuidV1();
     const password = registerDto.password;
     const hashedPassword = await bcrypt.hash(password, this.saltOrRounds);
@@ -129,20 +129,12 @@ export class AuthService {
     const email = registerDto.email;
     this.mailService.sendMail(email, '이메일 인증 코드입니다', `${code}`);
 
-    // token cookie 설정
-    const cookieOptions: CookieOptions = {
-      httpOnly: true, // can't be accessed by JavaScript => reduces XSS risk
-      secure: process.env.NODE_ENV === 'production', // send only over HTTPS in production
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : undefined, // CSRF protection
-      maxAge: 24 * 3600 * 1000, // 1d
-    };
-    response.cookie('token', token, cookieOptions);
+    return { token };
   }
 
   // /auth/email/send
   // 이메일 재전송
-  async sendEmail(request: Request) {
-    const token = request.headers.cookie.split('token=')[1];
+  async sendEmail(token: string) {
     if (!token) {
       throw new UserException(USER_ERROR.TOKEN_INVALID);
     }
@@ -166,12 +158,7 @@ export class AuthService {
 
   // /auth/email/activate
   // return: clear-cookie('token')
-  async emailActivate(
-    request: Request,
-    emailActivateDto: EmailActivateDto,
-    response: Response,
-  ) {
-    const token = request.headers.cookie.split('token=')[1];
+  async emailActivate(token: string, emailActivateDto: EmailActivateDto) {
     const { activationCode } = emailActivateDto;
 
     const user = await this.prisma.user.findFirst({ where: { token } });
@@ -200,8 +187,6 @@ export class AuthService {
         },
       });
     });
-
-    response.clearCookie('token');
   }
 
   // /auth/login -> localStrategy -> validateUser -> return user
