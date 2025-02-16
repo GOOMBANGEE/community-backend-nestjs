@@ -21,9 +21,10 @@ import { CheckPasswordDto } from './dto/check-password.dto';
 import { RateDto } from './dto/rate.dto';
 import { AuthService } from '../auth/auth.service';
 import { CommunityService } from '../community/community.service';
+import { USER_ERROR, UserException } from '../common/exception/user.exception';
 
-@UseGuards(AccessGuard)
 @Controller('post')
+@UseGuards(AccessGuard)
 export class PostController {
   constructor(
     private readonly postService: PostService,
@@ -85,6 +86,7 @@ export class PostController {
     @RequestUser() requestUser: RequestUser,
     @Body() rateDto: RateDto,
   ) {
+    if (!requestUser) throw new UserException(USER_ERROR.UNREGISTERED);
     const user = await this.authService.validateRequestUser(requestUser);
     return this.postService.rate(id, user, rateDto);
   }
