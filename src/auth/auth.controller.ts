@@ -57,18 +57,19 @@ export class AuthController {
     @RequestUser() requestUser: RequestUserLocal,
     @Res({ passthrough: true }) response: Response,
   ) {
-    console.log(requestUser);
     return this.authService.login(requestUser, response);
   }
 
   // /auth/refresh
-  // return: {username, accessToken, accessTokenExpire}
+  // return: {id, username, accessToken, accessTokenExpire}
   @Get('refresh')
   @UseGuards(RefreshGuard)
   @HttpCode(HttpStatus.OK)
-  refresh(@RequestUser() requestUser: RequestUser) {
-    console.log(requestUser);
-    return this.authService.refreshToken(requestUser);
+  async refresh(
+    @RequestUser() requestUser: RequestUser,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    return this.authService.refreshToken(requestUser, response);
   }
 
   // /auth/logout

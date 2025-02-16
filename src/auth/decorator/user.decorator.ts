@@ -1,12 +1,14 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
 
-// local guard
-export interface RequestUserLocal {
+export interface UserBase {
   id: number;
   username: string;
-  role: string;
+  role: string; // admin, null
+}
 
+// local guard
+export interface RequestUserLocal extends UserBase {
   email: string;
   registerDate: Date;
   activated: boolean;
@@ -14,11 +16,7 @@ export interface RequestUserLocal {
 }
 
 // jwt(access, refresh) guard
-export interface RequestUser {
-  id: number;
-  username: string;
-  role: string; // admin, null
-
+export interface RequestUser extends UserBase {
   type: string; // accessToken, refreshToken
   iat: number;
   exp: number;

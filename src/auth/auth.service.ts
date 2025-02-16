@@ -12,7 +12,11 @@ import { User } from '@prisma/client';
 import { v1 as uuidV1 } from 'uuid';
 import { MailService } from '../mail/mail.service';
 import { EmailActivateDto } from './dto/email-activate.dto';
-import { RequestUser, RequestUserLocal } from './decorator/user.decorator';
+import {
+  RequestUser,
+  RequestUserLocal,
+  UserBase,
+} from './decorator/user.decorator';
 import {
   VALIDATION_ERROR,
   ValidException,
@@ -213,20 +217,42 @@ export class AuthService {
   }
 
   // /auth/login
-  async login(user: RequestUserLocal, response: Response) {
-    const userId = user.id;
-    const username = user.username;
-    const role = user.role;
+  async login(requestUserLocal: RequestUserLocal, response: Response) {
+    const { accessToken, accessTokenExpires } =
+      await this.generateAccessToken(requestUserLocal);
+    await this.generateRefreshToken(requestUserLocal, response);
 
+    return {
+      username: requestUserLocal.username,
+      accessToken,
+      accessTokenExpires,
+    };
+  }
+
+  async generateAccessToken(user: UserBase) {
     const accessTokenExpires = this.accessTokenExpires;
     // expiresIn => 1s단위 => 3600 => 1h
     const accessToken = await this.jwtService.signAsync(
-      { id: userId, username, type: this.accessTokenKey, role },
+      {
+        id: user.id,
+        username: user.username,
+        type: this.accessTokenKey,
+        role: user.role,
+      },
       { secret: this.accessTokenSecret, expiresIn: accessTokenExpires },
     );
 
+    return { accessToken, accessTokenExpires };
+  }
+
+  async generateRefreshToken(user: UserBase, response: Response) {
     const refreshToken = await this.jwtService.signAsync(
-      { id: userId, username, type: this.refreshTokenKey, role },
+      {
+        id: user.id,
+        username: user.username,
+        type: this.refreshTokenKey,
+        role: user.role,
+      },
       { secret: this.refreshTokenSecret, expiresIn: this.refreshTokenExpires },
     );
 
@@ -238,29 +264,26 @@ export class AuthService {
       maxAge: this.refreshTokenExpires * 1000, // set cookie expiration
     };
     response.cookie(this.refreshTokenKey, refreshToken, cookieOptions);
-
-    return { username, accessToken, accessTokenExpires };
   }
 
   // /auth/refresh
-  async refreshToken(requestUser: RequestUser) {
-    if (requestUser.type !== this.refreshTokenKey) {
+  async refreshToken(requestUser: RequestUser, response: Response) {
+    if (
+      requestUser.type !== this.refreshTokenKey ||
+      Date.now() >= requestUser.exp * 1000
+    ) {
+      response.clearCookie(this.refreshTokenKey);
       throw new UserException(USER_ERROR.REFRESH_TOKEN_INVALID);
     }
+    const { accessToken, accessTokenExpires } =
+      await this.generateAccessToken(requestUser);
 
-    const username = requestUser.username;
-    const accessTokenExpires = this.accessTokenExpires;
-    const accessToken = await this.jwtService.signAsync(
-      {
-        id: requestUser.id,
-        username: requestUser.username,
-        type: this.accessTokenKey,
-        role: requestUser.role,
-      },
-      { secret: this.accessTokenSecret, expiresIn: accessTokenExpires },
-    );
-
-    return { username, accessToken, accessTokenExpires };
+    return {
+      id: requestUser.id,
+      username: requestUser.username,
+      accessToken,
+      accessTokenExpires,
+    };
   }
 
   // /auth/logout
@@ -279,11 +302,13 @@ export class AuthService {
 
   async validateRequestUser(requestUser: RequestUser) {
     if (requestUser) {
-      return this.prisma.user.findUnique({
-        where: { id: requestUser.id },
-      });
+      try {
+        return await this.prisma.user.findUnique({
+          where: { id: requestUser.id },
+        });
+      } catch (e) {
+        throw new UserException(USER_ERROR.UNREGISTERED);
+      }
     }
-
-    throw new UserException(USER_ERROR.UNREGISTERED);
   }
 }
