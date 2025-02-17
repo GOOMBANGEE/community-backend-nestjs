@@ -29,7 +29,7 @@ import { CommentModule } from './comment/comment.module';
         FRONTEND_URL: Joi.string().required(),
         SENTRY_DSN: Joi.string().required(),
 
-        REGISTER_CODE_LENGTH: Joi.number().required(),
+        ACTIVATION_CODE_LENGTH: Joi.number().required(),
         SALT_OR_ROUNDS: Joi.number().required(),
 
         JWT_ACCESS_TOKEN_KEY: Joi.string().required(),

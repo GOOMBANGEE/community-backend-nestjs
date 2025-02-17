@@ -1,4 +1,5 @@
-const registerCodeLength = 'REGISTER_CODE_LENGTH';
+const frontUrl = 'FRONT_URL';
+const activationCodeLength = 'ACTIVATION_CODE_LENGTH';
 const saltOrRounds = 'SALT_OR_ROUNDS';
 
 const accessTokenKey = 'JWT_ACCESS_TOKEN_KEY';
@@ -15,7 +16,8 @@ const mailDefaultsFrom = 'MAIL_DEFAULTS_FROM';
 const mailTemplateDir = 'MAIL_TEMPLATE_DIR';
 
 export const envKey = {
-  registerCodeLength,
+  frontUrl,
+  activationCodeLength,
   saltOrRounds,
 
   accessTokenKey,

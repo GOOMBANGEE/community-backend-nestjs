@@ -24,7 +24,7 @@ import {
 
 @Injectable()
 export class AuthService {
-  private readonly registerCodeLength: number;
+  private readonly activationCodeLength: number;
   private readonly saltOrRounds: number;
   private readonly accessTokenKey: string;
   private readonly accessTokenExpires: number;
@@ -39,7 +39,9 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
   ) {
-    this.registerCodeLength = this.configService.get(envKey.registerCodeLength);
+    this.activationCodeLength = this.configService.get(
+      envKey.activationCodeLength,
+    );
     this.saltOrRounds = Number(this.configService.get(envKey.saltOrRounds));
     this.accessTokenKey = this.configService.get(envKey.accessTokenKey);
     this.accessTokenExpires = this.configService.get(envKey.accessTokenExpires);
@@ -112,6 +114,11 @@ export class AuthService {
   async saveUserInfo(registerDto: RegisterDto) {
     const token = uuidV1();
     const password = registerDto.password;
+    const confirmPassword = registerDto.confirmPassword;
+    if (password !== confirmPassword) {
+      throw new UserException(USER_ERROR.PASSWORD_DO_NOT_MATCH);
+    }
+
     const hashedPassword = await bcrypt.hash(password, this.saltOrRounds);
     delete registerDto.confirmPassword;
 
@@ -120,18 +127,22 @@ export class AuthService {
     });
 
     // activationCode generate
-    const codeLength = this.registerCodeLength;
+    const codeLength = this.activationCodeLength;
     const max = 10 ** codeLength - 1;
     const min = 10 ** (codeLength - 1);
-    const code = Math.floor(Math.random() * (max - min + 1) + min);
+    const activationCode = Math.floor(Math.random() * (max - min + 1) + min);
 
     await this.prisma.userTemp.create({
-      data: { token: token, activationCode: code, userId: user.id },
+      data: { token, activationCode, userId: user.id },
     });
 
     // activationCode 메일 보내기
     const email = registerDto.email;
-    this.mailService.sendMail(email, '이메일 인증 코드입니다', `${code}`);
+    this.mailService.sendMail(
+      email,
+      '이메일 인증 코드입니다',
+      `${activationCode}`,
+    );
 
     return { token };
   }

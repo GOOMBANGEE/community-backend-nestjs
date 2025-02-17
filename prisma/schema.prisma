@@ -30,18 +30,17 @@ model UserTemp {
   id             Int    @id @default(autoincrement())
   userId         Int    @unique @map("user_id")
   user           User   @relation(fields: [userId], references: [id])
-  token          String
+  token          String @unique
   activationCode Int    @map("activation_code")
 
   @@index([userId])
 }
 
 model userTempReset {
-  id             Int    @id @default(autoincrement())
-  userId         Int    @unique @map("user_id")
-  user           User   @relation(fields: [userId], references: [id])
-  token          String
-  activationCode Int    @map("activation_code")
+  id     Int    @id @default(autoincrement())
+  userId Int    @unique @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+  token  String @unique
 
   @@index([userId])
 }

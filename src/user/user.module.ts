@@ -3,9 +3,10 @@ import { CommonModule } from 'src/common/common.module';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { AuthModule } from '../auth/auth.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [CommonModule, AuthModule],
+  imports: [CommonModule, AuthModule, MailModule],
   controllers: [UserController],
   providers: [UserService],
 })
