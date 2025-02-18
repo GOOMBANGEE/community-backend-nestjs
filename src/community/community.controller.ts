@@ -16,7 +16,7 @@ import { UpdateCommunityDto } from './dto/update-community.dto';
 import { AdminGuard } from '../auth/guard/admin.guard';
 import { AccessGuard } from '../auth/guard/access.guard';
 
-@Controller('community')
+@Controller('api/community')
 export class CommunityController {
   constructor(private readonly communityService: CommunityService) {}
 

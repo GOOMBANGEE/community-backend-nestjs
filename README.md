@@ -36,3 +36,23 @@ npm run start
 # watch mode
 npm run start:dev
 ```
+
+## Deploy project
+
+
+```bash
+# db migrate
+cd community-backend-nestjs
+npm install
+npx prisma migrate dev --name init
+
+# create docker image
+docker build -t localhost:5000/community:latest .
+
+# set deploy environment
+mkdir -p ./postgresql/data 
+cp sample.env ./env/community.env
+docker-compose up -d # need postgresql port forwarding
+
+
+```

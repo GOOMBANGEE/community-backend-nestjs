@@ -19,7 +19,7 @@ import { USER_ERROR, UserException } from '../common/exception/user.exception';
 import { RecoverDto } from './dto/recover.dto';
 import { RecoverPasswordDto } from './dto/recover-password.dto';
 
-@Controller('user')
+@Controller('api/user')
 @UseGuards(AccessGuard)
 export class UserController {
   constructor(

@@ -23,7 +23,7 @@ import { AuthService } from '../auth/auth.service';
 import { CommunityService } from '../community/community.service';
 import { USER_ERROR, UserException } from '../common/exception/user.exception';
 
-@Controller('post')
+@Controller('api/post')
 @UseGuards(AccessGuard)
 export class PostController {
   constructor(

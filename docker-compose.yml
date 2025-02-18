@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    env_file:
+      - ./env/postgres.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgresql/data:/var/lib/postgresql/data
+    networks:
+      - community
+  community:
+    image: localhost:5000/community:latest
+    container_name: community
+    env_file:
+      - ./env/community.env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    networks:
+      - community
+
+networks:
+  community:
+    driver: bridge

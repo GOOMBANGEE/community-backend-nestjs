@@ -19,7 +19,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { LocalGuard } from './guard/local.guard';
 import { EmailActivateDto } from './dto/email-activate.dto';
 
-@Controller('auth')
+@Controller('api/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

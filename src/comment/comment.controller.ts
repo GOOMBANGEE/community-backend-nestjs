@@ -20,7 +20,7 @@ import { PostService } from '../post/post.service';
 import { CommunityService } from '../community/community.service';
 
 @UseGuards(AccessGuard)
-@Controller('comment')
+@Controller('api/comment')
 export class CommentController {
   constructor(
     private readonly commentService: CommentService,
