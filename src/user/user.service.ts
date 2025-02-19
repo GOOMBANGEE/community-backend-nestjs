@@ -6,16 +6,15 @@ import { ConfigService } from '@nestjs/config';
 import { envKey } from '../common/const/env.const';
 import { Response } from 'express';
 import { USER_ERROR, UserException } from '../common/exception/user.exception';
-import { User } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { RecoverDto } from './dto/recover.dto';
 import { MailService } from '../mail/mail.service';
 import { v1 as uuidV1 } from 'uuid';
 import { RecoverPasswordDto } from './dto/recover-password.dto';
+import { RequestUser } from '../auth/decorator/user.decorator';
 
 @Injectable()
 export class UserService {
-  private readonly activationCodeLength: number;
   private readonly saltOrRounds: number;
   private readonly refreshTokenKey: string;
 
@@ -25,15 +24,17 @@ export class UserService {
     private readonly authService: AuthService,
     private readonly mailService: MailService,
   ) {
-    this.activationCodeLength = this.configService.get(
-      envKey.activationCodeLength,
-    );
     this.saltOrRounds = Number(this.configService.get(envKey.saltOrRounds));
     this.refreshTokenKey = this.configService.get(envKey.refreshTokenKey);
   }
 
   // /user
-  async update(user: User, updateUserDto: UpdateUserDto, response: Response) {
+  async update(
+    requestUser: RequestUser,
+    updateUserDto: UpdateUserDto,
+    response: Response,
+  ) {
+    const user = await this.authService.validateRequestUser(requestUser);
     // username update
     const username = updateUserDto.username;
     if (username) {
@@ -75,7 +76,8 @@ export class UserService {
   }
 
   // /user
-  async delete(user: User, response: Response) {
+  async delete(requestUser: RequestUser, response: Response) {
+    const user = await this.authService.validateRequestUser(requestUser);
     response.clearCookie(this.refreshTokenKey);
     await this.prisma.user.delete({ where: { id: user.id } });
   }

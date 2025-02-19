@@ -17,7 +17,10 @@ export class CommunityService {
   async create(createCommunityDto: CreateCommunityDto) {
     const { title } = createCommunityDto;
     return this.prisma.community.create({
-      data: { title, description: `${title} 게시판 입니다.` },
+      data: {
+        title: `${title} 게시판`,
+        description: `${title} 게시판 입니다.`,
+      },
     });
   }
 

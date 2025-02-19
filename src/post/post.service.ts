@@ -6,19 +6,27 @@ import * as bcrypt from 'bcrypt';
 import { POST_ERROR, PostException } from '../common/exception/post.exception';
 import { CheckPasswordDto } from './dto/check-password.dto';
 import { RateDto } from './dto/rate.dto';
-import { Community, User } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
+import { CommunityService } from '../community/community.service';
+import { RequestUser } from '../auth/decorator/user.decorator';
+import { USER_ERROR, UserException } from '../common/exception/user.exception';
 
 @Injectable()
 export class PostService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
+    private readonly communityService: CommunityService,
   ) {}
 
   // /post
   // return: id: postId
-  async create(user: User, community: Community, createPostDto: CreatePostDto) {
+  async create(requestUser: RequestUser, createPostDto: CreatePostDto) {
+    const [user, community] = await Promise.all([
+      this.authService.validateRequestUser(requestUser),
+      this.communityService.validateCommunity(createPostDto.communityId),
+    ]);
+
     let hashedPassword: string;
     if (!user) {
       hashedPassword = await this.authService.encryptPassword(
@@ -86,8 +94,13 @@ export class PostService {
 
   // /post
   // return: {id: postId}
-  async update(id: number, user: User, updatePostDto: UpdatePostDto) {
+  async update(
+    id: number,
+    requestUser: RequestUser,
+    updatePostDto: UpdatePostDto,
+  ) {
     const post = await this.validatePost(id);
+    const user = await this.authService.validateRequestUser(requestUser);
     // creator 있는 경우 회원 게시글 -> 회원검사
     if (updatePostDto.creator) {
       await this.prisma.post.update({
@@ -116,8 +129,11 @@ export class PostService {
 
   // /post/:id/rate
   // 회원만 접근가능
-  async rate(id: number, user: User, rateDto: RateDto) {
+  async rate(id: number, requestUser: RequestUser, rateDto: RateDto) {
+    if (!requestUser) throw new UserException(USER_ERROR.UNREGISTERED);
     await this.validatePost(id);
+    const user = await this.authService.validateRequestUser(requestUser);
+
     try {
       if (rateDto.rate) {
         await this.prisma.$transaction([
@@ -159,8 +175,9 @@ export class PostService {
   }
 
   // /post
-  async remove(id: number, password: string, user: User) {
+  async remove(id: number, password: string, requestUser: RequestUser) {
     const post = await this.validatePost(id);
+    const user = await this.authService.validateRequestUser(requestUser);
 
     if (post.creator) {
       await this.prisma.post.delete({ where: { id, creator: user.id } });

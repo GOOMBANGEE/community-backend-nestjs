@@ -19,18 +19,11 @@ import { RequestUser } from '../auth/decorator/user.decorator';
 import { AccessGuard } from '../auth/guard/access.guard';
 import { CheckPasswordDto } from './dto/check-password.dto';
 import { RateDto } from './dto/rate.dto';
-import { AuthService } from '../auth/auth.service';
-import { CommunityService } from '../community/community.service';
-import { USER_ERROR, UserException } from '../common/exception/user.exception';
 
 @Controller('api/post')
 @UseGuards(AccessGuard)
 export class PostController {
-  constructor(
-    private readonly postService: PostService,
-    private readonly authService: AuthService,
-    private readonly communityService: CommunityService,
-  ) {}
+  constructor(private readonly postService: PostService) {}
 
   // /post
   // return: {id: postId}
@@ -39,11 +32,7 @@ export class PostController {
     @RequestUser() requestUser: RequestUser,
     @Body() createPostDto: CreatePostDto,
   ) {
-    const [user, community] = await Promise.all([
-      this.authService.validateRequestUser(requestUser),
-      this.communityService.validateCommunity(createPostDto.communityId),
-    ]);
-    return this.postService.create(user, community, createPostDto);
+    return this.postService.create(requestUser, createPostDto);
   }
 
   // /post/:id
@@ -73,8 +62,7 @@ export class PostController {
     @RequestUser() requestUser: RequestUser,
     @Body() updatePostDto: UpdatePostDto,
   ) {
-    const user = await this.authService.validateRequestUser(requestUser);
-    return this.postService.update(id, user, updatePostDto);
+    return this.postService.update(id, requestUser, updatePostDto);
   }
 
   // /post/:id/rate
@@ -86,9 +74,7 @@ export class PostController {
     @RequestUser() requestUser: RequestUser,
     @Body() rateDto: RateDto,
   ) {
-    if (!requestUser) throw new UserException(USER_ERROR.UNREGISTERED);
-    const user = await this.authService.validateRequestUser(requestUser);
-    return this.postService.rate(id, user, rateDto);
+    return this.postService.rate(id, requestUser, rateDto);
   }
 
   // /post/:id?password=string
@@ -98,7 +84,6 @@ export class PostController {
     @Query('password') password: string,
     @RequestUser() requestUser: RequestUser,
   ) {
-    const user = await this.authService.validateRequestUser(requestUser);
-    return this.postService.remove(id, password, user);
+    return this.postService.remove(id, password, requestUser);
   }
 }

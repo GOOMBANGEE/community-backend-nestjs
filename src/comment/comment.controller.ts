@@ -15,19 +15,11 @@ import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { AccessGuard } from '../auth/guard/access.guard';
 import { RequestUser } from '../auth/decorator/user.decorator';
-import { AuthService } from '../auth/auth.service';
-import { PostService } from '../post/post.service';
-import { CommunityService } from '../community/community.service';
 
 @UseGuards(AccessGuard)
 @Controller('api/comment')
 export class CommentController {
-  constructor(
-    private readonly commentService: CommentService,
-    private readonly authService: AuthService,
-    private readonly communityService: CommunityService,
-    private readonly postService: PostService,
-  ) {}
+  constructor(private readonly commentService: CommentService) {}
 
   // /comment
   // return: {id:commentId}
@@ -36,12 +28,7 @@ export class CommentController {
     @RequestUser() requestUser: RequestUser,
     @Body() createCommentDto: CreateCommentDto,
   ) {
-    const [user, community, post] = await Promise.all([
-      this.authService.validateRequestUser(requestUser),
-      this.communityService.validateCommunity(createCommentDto.communityId),
-      this.postService.validatePost(createCommentDto.postId),
-    ]);
-    return this.commentService.create(user, community, post, createCommentDto);
+    return this.commentService.create(requestUser, createCommentDto);
   }
 
   // /comment/:postId?page=1
@@ -62,8 +49,7 @@ export class CommentController {
     @RequestUser() requestUser: RequestUser,
     @Body() updateCommentDto: UpdateCommentDto,
   ) {
-    const user = await this.authService.validateRequestUser(requestUser);
-    return this.commentService.update(id, user, updateCommentDto);
+    return this.commentService.update(id, requestUser, updateCommentDto);
   }
 
   // /comment/:id?password=string
@@ -73,7 +59,6 @@ export class CommentController {
     @Query('password') password: string,
     @RequestUser() requestUser: RequestUser,
   ) {
-    const user = await this.authService.validateRequestUser(requestUser);
-    return this.commentService.remove(id, password, user);
+    return this.commentService.remove(id, password, requestUser);
   }
 }

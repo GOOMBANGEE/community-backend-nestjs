@@ -7,24 +7,28 @@ import {
   CommentException,
 } from '../common/exception/comment.exception';
 import * as bcrypt from 'bcrypt';
-import { Community, Post, User } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
+import { RequestUser } from '../auth/decorator/user.decorator';
+import { CommunityService } from '../community/community.service';
+import { PostService } from '../post/post.service';
 
 @Injectable()
 export class CommentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
+    private readonly communityService: CommunityService,
+    private readonly postService: PostService,
   ) {}
 
   // /comment
   // return: {id:commentId}
-  async create(
-    user: User,
-    community: Community,
-    post: Post,
-    createCommentDto: CreateCommentDto,
-  ) {
+  async create(requestUser: RequestUser, createCommentDto: CreateCommentDto) {
+    const [user, community, post] = await Promise.all([
+      this.authService.validateRequestUser(requestUser),
+      this.communityService.validateCommunity(createCommentDto.communityId),
+      this.postService.validatePost(createCommentDto.postId),
+    ]);
     let hashedPassword: string;
     if (!user) {
       hashedPassword = await this.authService.encryptPassword(
@@ -83,8 +87,14 @@ export class CommentService {
 
   // /comment
   // return {id:commentId}
-  async update(id: number, user: User, updateCommentDto: UpdateCommentDto) {
+  async update(
+    id: number,
+    requestUser: RequestUser,
+    updateCommentDto: UpdateCommentDto,
+  ) {
     const comment = await this.validateComment(id);
+    const user = await this.authService.validateRequestUser(requestUser);
+
     if (updateCommentDto.creator) {
       await this.prisma.comment.update({
         where: { id, creator: user.id },
@@ -112,8 +122,9 @@ export class CommentService {
   }
 
   // /comment
-  async remove(id: number, password: string, user: User) {
+  async remove(id: number, password: string, requestUser: RequestUser) {
     const comment = await this.validateComment(id);
+    const user = await this.authService.validateRequestUser(requestUser);
 
     if (comment.creator) {
       await this.prisma.comment.delete({ where: { id, creator: user.id } });

@@ -14,7 +14,6 @@ import { RequestUser } from '../auth/decorator/user.decorator';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Response } from 'express';
 import { AccessGuard } from '../auth/guard/access.guard';
-import { AuthService } from '../auth/auth.service';
 import { USER_ERROR, UserException } from '../common/exception/user.exception';
 import { RecoverDto } from './dto/recover.dto';
 import { RecoverPasswordDto } from './dto/recover-password.dto';
@@ -22,10 +21,7 @@ import { RecoverPasswordDto } from './dto/recover-password.dto';
 @Controller('api/user')
 @UseGuards(AccessGuard)
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
   // /user
   @Patch()
@@ -37,8 +33,7 @@ export class UserController {
     if (!requestUser || requestUser.role?.includes('admin')) {
       throw new UserException(USER_ERROR.PERMISSION_DENIED);
     }
-    const user = await this.authService.validateRequestUser(requestUser);
-    return this.userService.update(user, updateUserDto, response);
+    return this.userService.update(requestUser, updateUserDto, response);
   }
 
   // /user
@@ -51,8 +46,7 @@ export class UserController {
     if (!requestUser || requestUser.role?.includes('admin')) {
       throw new UserException(USER_ERROR.PERMISSION_DENIED);
     }
-    const user = await this.authService.validateRequestUser(requestUser);
-    return this.userService.delete(user, response);
+    return this.userService.delete(requestUser, response);
   }
 
   // /user/recover
