@@ -161,9 +161,10 @@ export class CommunityService {
 
   async validateCommunity(id: number) {
     if (id) {
-      return this.prisma.community.findUnique({
+      const community = await this.prisma.community.findUnique({
         where: { id },
       });
+      if (community) return community;
     }
     throw new CommunityException(COMMUNITY_ERROR.COMMUNITY_INVALID);
   }

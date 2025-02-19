@@ -1,4 +1,10 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 import { VALIDATION_ERROR } from '../../common/exception/valid.exception';
 
 export class CreateCommentDto {
@@ -15,8 +21,10 @@ export class CreateCommentDto {
   content: string;
 
   @IsOptional()
+  @Length(2, 20, { message: VALIDATION_ERROR.USERNAME_ERROR })
   username: string;
 
   @IsOptional()
+  @Length(4, 20, { message: VALIDATION_ERROR.PASSWORD_ERROR })
   password: string;
 }

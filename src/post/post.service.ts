@@ -194,7 +194,8 @@ export class PostService {
 
   async validatePost(id: number) {
     if (id) {
-      return this.prisma.post.findUnique({ where: { id } });
+      const post = await this.prisma.post.findUnique({ where: { id } });
+      if (post) return post;
     }
     throw new PostException(POST_ERROR.POST_INVALID);
   }

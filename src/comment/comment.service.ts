@@ -141,7 +141,8 @@ export class CommentService {
 
   async validateComment(id: number) {
     if (id) {
-      return this.prisma.comment.findUnique({ where: { id } });
+      const comment = await this.prisma.comment.findUnique({ where: { id } });
+      if (comment) return comment;
     }
     throw new CommentException(COMMENT_ERROR.COMMENT_INVALID);
   }
