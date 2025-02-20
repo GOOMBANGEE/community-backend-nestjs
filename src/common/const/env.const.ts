@@ -1,6 +1,9 @@
+const baseUrl = 'BASE_URL';
 const frontUrl = 'FRONT_URL';
 const activationCodeLength = 'ACTIVATION_CODE_LENGTH';
 const saltOrRounds = 'SALT_OR_ROUNDS';
+
+const imagePath = 'IMAGE_PATH';
 
 const accessTokenKey = 'JWT_ACCESS_TOKEN_KEY';
 const accessTokenExpires = 'JWT_ACCESS_TOKEN_EXPIRES';
@@ -16,9 +19,12 @@ const mailDefaultsFrom = 'MAIL_DEFAULTS_FROM';
 const mailTemplateDir = 'MAIL_TEMPLATE_DIR';
 
 export const envKey = {
+  baseUrl,
   frontUrl,
   activationCodeLength,
   saltOrRounds,
+
+  imagePath,
 
   accessTokenKey,
   accessTokenExpires,

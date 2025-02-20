@@ -10,14 +10,30 @@ import { AuthService } from '../auth/auth.service';
 import { CommunityService } from '../community/community.service';
 import { RequestUser } from '../auth/decorator/user.decorator';
 import { USER_ERROR, UserException } from '../common/exception/user.exception';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { v1 as uuidV1 } from 'uuid';
+import { ConfigService } from '@nestjs/config';
+import { envKey } from '../common/const/env.const';
 
 @Injectable()
 export class PostService {
+  private readonly baseUrl;
+  private readonly imagePath;
   constructor(
     private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
     private readonly authService: AuthService,
     private readonly communityService: CommunityService,
-  ) {}
+  ) {
+    this.baseUrl = this.configService.get(envKey.baseUrl);
+    this.imagePath = path.join(this.configService.get(envKey.imagePath));
+
+    // 이미지 저장 디렉토리 없으면 생성
+    if (!fs.existsSync(this.imagePath)) {
+      fs.mkdirSync(this.imagePath, { recursive: true });
+    }
+  }
 
   // /post
   // return: id: postId
@@ -27,6 +43,7 @@ export class PostService {
       this.communityService.validateCommunity(createPostDto.communityId),
     ]);
 
+    const updateContent = await this.replaceBase64InHtml(createPostDto.content);
     let hashedPassword: string;
     if (!user) {
       hashedPassword = await this.authService.encryptPassword(
@@ -37,7 +54,7 @@ export class PostService {
     const post = await this.prisma.post.create({
       data: {
         title: createPostDto.title,
-        content: createPostDto.content,
+        content: updateContent,
         creator: user ? user.id : null,
         username: user ? user.username : createPostDto.username,
         password: user ? null : hashedPassword,
@@ -45,6 +62,57 @@ export class PostService {
       },
     });
     return post.id;
+  }
+
+  // html -> image -> base64 순서로 이미지 정보 가져온 후 base64를 서버에 저장된 이미지 경로인 imageUrl로 수정
+  async replaceBase64InHtml(htmlContent: string) {
+    const imgRegex =
+      /<img[^>]+src=["'](data:image\/[a-zA-Z]+;base64,[^"']+)["'][^>]*>/g;
+    let updateHtml = htmlContent;
+    const promiseList: Promise<{ imgTag: string; newTag: string }>[] = [];
+
+    const matchList = [...htmlContent.matchAll(imgRegex)];
+    matchList.forEach((match) => {
+      // imgTag = <img src="~"/>
+      // base64 = data:image/{extension};base64~
+      const [imgTag, base64] = match;
+      // base64Match => divide extension and data
+      const base64Match = RegExp(/^data:image\/([a-zA-Z]+);base64,(.+)$/).exec(
+        base64,
+      );
+
+      promiseList.push(
+        this.saveImage(base64Match).then((image) => {
+          // 클라이언트에서 접근할 이미지 경로
+          const imageUrl = `${this.baseUrl}/${this.imagePath}/${image.filename}`;
+          return { imgTag, newTag: imgTag.replace(base64, imageUrl) };
+        }),
+      );
+    });
+
+    const replaceList = await Promise.all(promiseList);
+    replaceList.forEach(({ imgTag, newTag }) => {
+      // html 태그안의 img src="{base64Data}" 에서 base64Data 부분을 imageUrl 로 변경
+      updateHtml = updateHtml.replace(imgTag, newTag);
+    });
+
+    return updateHtml;
+  }
+
+  // base64 가져와서 image 저장
+  async saveImage(
+    base64: RegExpMatchArray,
+  ): Promise<{ filename: string; base64Data: string }> {
+    const extension = base64[1];
+    const base64Data = base64[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    // 파일명 생성 및 저장
+    const filename = `${uuidV1()}-${Date.now()}.${extension}`;
+    const filePath = path.join(__dirname, this.imagePath, filename);
+    await fs.promises.writeFile(filePath, buffer);
+
+    return { filename, base64Data };
   }
 
   // /post/:id

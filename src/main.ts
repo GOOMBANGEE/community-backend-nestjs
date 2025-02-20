@@ -4,11 +4,18 @@ import * as Sentry from '@sentry/nestjs';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { AppModule } from './app.module';
 import { ValidException } from './common/exception/valid.exception';
+import { json } from 'express';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 declare const module: any; // hot reload | webpack 설정
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useStaticAssets(join(__dirname, 'image'), {
+    prefix: '/image', // http://localhost:3000/{prefix}/file 접근시 api가 아닌 static으로 접근 가능
+  });
+  app.use(json({ limit: '50mb' }));
 
   // CORS 설정
   const frontendUrl = process.env.FRONTEND_URL;
