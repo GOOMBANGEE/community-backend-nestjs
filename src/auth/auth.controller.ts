@@ -15,7 +15,6 @@ import { RefreshGuard } from './guard/refresh.guard';
 import { RequestUser, RequestUserLocal } from './decorator/user.decorator';
 import { Response } from 'express';
 import { AccessGuard } from './guard/access.guard';
-import { AuthGuard } from '@nestjs/passport';
 import { LocalGuard } from './guard/local.guard';
 import { EmailActivateDto } from './dto/email-activate.dto';
 
@@ -49,7 +48,6 @@ export class AuthController {
 
   // /auth/login
   // return: {username, accessToken, accessTokenExpire}, set-cookie('refreshToken')
-  @UseGuards(AuthGuard('local')) // auth/strategy/local.strategy.ts return user; => request.user = user
   @Post('login')
   @UseGuards(LocalGuard) // auth/guard/local.guard.ts => LocalGuard extends AuthGuard('local')
   @HttpCode(HttpStatus.OK)
