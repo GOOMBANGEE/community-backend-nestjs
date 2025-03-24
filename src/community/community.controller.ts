@@ -9,12 +9,14 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CommunityService } from './community.service';
 import { CreateCommunityDto } from './dto/create-community.dto';
 import { UpdateCommunityDto } from './dto/update-community.dto';
 import { AdminGuard } from '../auth/guard/admin.guard';
 import { AccessGuard } from '../auth/guard/access.guard';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 @Controller('api/community')
 export class CommunityController {
@@ -31,7 +33,10 @@ export class CommunityController {
   // /community?page=number
   // return: {communityList: (Community & { postList: Post[] })[], total: community.count, page: currentPage, totalPage}
   @Get()
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(10000)
   communityList(@Query('page', ParseIntPipe) page: number = 1) {
+    console.log('cache');
     return this.communityService.communityList(page);
   }
 

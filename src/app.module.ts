@@ -17,10 +17,15 @@ import { AppService } from './app.service';
 import { CommunityModule } from './community/community.module';
 import { PostModule } from './post/post.module';
 import { CommentModule } from './comment/comment.module';
+import { CacheModule } from '@nestjs/cache-manager';
 import { ResponseTimeInterceptor } from './common/interceptor/response-time.interceptor';
 
 @Module({
   imports: [
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 0,
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env`,
