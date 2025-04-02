@@ -10,29 +10,25 @@ import { AuthService } from '../auth/auth.service';
 import { CommunityService } from '../community/community.service';
 import { RequestUser } from '../auth/decorator/user.decorator';
 import { USER_ERROR, UserException } from '../common/exception/user.exception';
-import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { v1 as uuidV1 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
+import { ImageService } from '../common/image.service';
 import { envKey } from '../common/const/env.const';
 
 @Injectable()
 export class PostService {
-  private readonly baseUrl;
-  private readonly imagePath;
+  private readonly baseUrl: string;
+  private readonly imagePath: string;
+
   constructor(
-    private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly imageService: ImageService,
+    private readonly prisma: PrismaService,
     private readonly authService: AuthService,
     private readonly communityService: CommunityService,
   ) {
     this.baseUrl = this.configService.get(envKey.baseUrl);
     this.imagePath = path.join(this.configService.get(envKey.imagePath));
-
-    // 이미지 저장 디렉토리 없으면 생성
-    if (!fs.existsSync(this.imagePath)) {
-      fs.mkdirSync(this.imagePath, { recursive: true });
-    }
   }
 
   // /post
@@ -82,7 +78,7 @@ export class PostService {
       );
 
       promiseList.push(
-        this.saveImage(base64Match).then((image) => {
+        this.imageService.saveContentImage(base64Match).then((image) => {
           // 클라이언트에서 접근할 이미지 경로
           const imageUrl = `${this.baseUrl}/${this.imagePath}/${image.filename}`;
           return { imgTag, newTag: imgTag.replace(base64, imageUrl) };
@@ -97,22 +93,6 @@ export class PostService {
     });
 
     return updateHtml;
-  }
-
-  // base64 가져와서 image 저장
-  async saveImage(
-    base64: RegExpMatchArray,
-  ): Promise<{ filename: string; base64Data: string }> {
-    const extension = base64[1];
-    const base64Data = base64[2];
-    const buffer = Buffer.from(base64Data, 'base64');
-
-    // 파일명 생성 및 저장
-    const filename = `${uuidV1()}-${Date.now()}.${extension}`;
-    const filePath = path.join(__dirname, this.imagePath, filename);
-    await fs.promises.writeFile(filePath, buffer);
-
-    return { filename, base64Data };
   }
 
   // /post/:id

@@ -7,10 +7,14 @@ import {
   COMMUNITY_ERROR,
   CommunityException,
 } from '../common/exception/community.exception';
+import { ImageService } from '../common/image.service';
 
 @Injectable()
 export class CommunityService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly imageService: ImageService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   // /community
   // admin만 접근가능
@@ -147,9 +151,15 @@ export class CommunityService {
   // /community
   // admin만 접근가능
   async update(id: number, updateCommunityDto: UpdateCommunityDto) {
+    let thumbnail: string | undefined = undefined;
+    if (updateCommunityDto.thumbnail) {
+      thumbnail = await this.imageService.saveIcon(
+        updateCommunityDto.thumbnail,
+      );
+    }
     return this.prisma.community.update({
       where: { id },
-      data: { ...updateCommunityDto },
+      data: { ...updateCommunityDto, thumbnail },
     });
   }
 
